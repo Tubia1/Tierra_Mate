@@ -19,6 +19,16 @@ export function createApp() {
   }));
   app.use(express.json({ limit: '1mb' }));
   app.use(rateLimit({ windowMs: 60_000, limit: 120, standardHeaders: 'draft-8' }));
+  app.get('/', (_req, res) => {
+    res.json({
+      data: {
+        service: 'tierra-mate-api',
+        status: 'ok',
+        apiBasePath: '/api',
+        healthPath: '/api/health',
+      },
+    });
+  });
   app.use('/api', apiRouter);
   app.use(notFoundHandler);
   app.use(errorHandler);

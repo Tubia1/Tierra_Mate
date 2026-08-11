@@ -4,6 +4,13 @@ import request from 'supertest';
 import { app } from '../src/app.js';
 import { productUpdateBody, variantUpdateBody } from '../src/schemas/productSchemas.js';
 
+test('GET / responde con informacion de la API', async () => {
+  const response = await request(app).get('/').expect(200);
+  assert.equal(response.body.data.status, 'ok');
+  assert.equal(response.body.data.service, 'tierra-mate-api');
+  assert.equal(response.body.data.apiBasePath, '/api');
+});
+
 test('GET /api/health responde correctamente', async () => {
   const response = await request(app).get('/api/health').expect(200);
   assert.equal(response.body.data.status, 'ok');
