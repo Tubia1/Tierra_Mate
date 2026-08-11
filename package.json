@@ -1,0 +1,16 @@
+{
+  "name": "tierra-mate-shop",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace @tierra-mate/api",
+    "start:api": "npm run start --workspace @tierra-mate/api",
+    "test": "npm run test --workspace @tierra-mate/api"
+  },
+  "dependencies": {
+    "@supabase/server": "^1.4.1"
+  }
+}
