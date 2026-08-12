@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "3a87faab-ed45-4b16-a547-22492b1ce9f9",
+		"_postman_id": "ea335b96-3995-449a-9d5b-345d14e9da3f",
 		"name": "Tierra Mate API",
 		"description": "Colección para probar todos los endpoints implementados de Tierra Mate Shop. Iniciar la API, seleccionar el environment Tierra Mate Local, completar adminEmail y adminPassword, y ejecutar en el orden de la colección. Las escrituras requieren el token guardado por Login.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -18,13 +18,12 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/",
+							"raw": "http://localhost:3000",
+							"protocol": "http",
 							"host": [
-								"{{baseUrl}}"
+								"localhost"
 							],
-							"path": [
-								""
-							]
+							"port": "3000"
 						}
 					},
 					"response": []
@@ -38,10 +37,12 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/health",
+							"raw": "http://localhost:3000/api/health",
+							"protocol": "http",
 							"host": [
-								"{{baseUrl}}"
+								"localhost"
 							],
+							"port": "3000",
 							"path": [
 								"api",
 								"health"
@@ -59,10 +60,12 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/health/database",
+							"raw": "http://localhost:3000/api/health/database",
+							"protocol": "http",
 							"host": [
-								"{{baseUrl}}"
+								"localhost"
 							],
+							"port": "3000",
 							"path": [
 								"api",
 								"health",
@@ -83,13 +86,13 @@
 						{
 							"listen": "test",
 							"script": {
-								"type": "text/javascript",
 								"exec": [
 									"const json = pm.response.json();",
 									"pm.test('Existe data.token', () => pm.expect(json).to.have.nested.property('data.token').that.is.a('string').and.not.empty);",
 									"pm.test('Existe data.admin', () => pm.expect(json).to.have.nested.property('data.admin').that.is.an('object'));",
 									"pm.environment.set(\"token\", pm.response.json().data.token);"
-								]
+								],
+								"type": "text/javascript"
 							}
 						}
 					],
@@ -106,7 +109,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+							"raw": "{\n  \"email\": \"tobiastotorohr@gmail.com\",\n  \"password\": \"EstoEsUnaPrueba11!!\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -114,10 +117,12 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/auth/login",
+							"raw": "http://localhost:3000/api/auth/login",
+							"protocol": "http",
 							"host": [
-								"{{baseUrl}}"
+								"localhost"
 							],
+							"port": "3000",
 							"path": [
 								"api",
 								"auth",
@@ -134,17 +139,26 @@
 			"item": [
 				{
 					"name": "Listar categorías",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
 					"request": {
 						"auth": {
 							"type": "noauth"
 						},
 						"method": "GET",
 						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
 						"url": {
-							"raw": "{{baseUrl}}/api/categories",
+							"raw": "http://localhost:3000/api/categories",
+							"protocol": "http",
 							"host": [
-								"{{baseUrl}}"
+								"localhost"
 							],
+							"port": "3000",
 							"path": [
 								"api",
 								"categories"
@@ -162,10 +176,12 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/categories?active=true&limit=10",
+							"raw": "http://localhost:3000/api/categories?active=true&limit=10",
+							"protocol": "http",
 							"host": [
-								"{{baseUrl}}"
+								"localhost"
 							],
+							"port": "3000",
 							"path": [
 								"api",
 								"categories"
@@ -190,12 +206,12 @@
 						{
 							"listen": "test",
 							"script": {
-								"type": "text/javascript",
 								"exec": [
 									"const json = pm.response.json();",
 									"pm.test('Existe data.id', () => pm.expect(json).to.have.nested.property('data.id'));",
 									"pm.environment.set('categoryId', json.data.id);"
-								]
+								],
+								"type": "text/javascript"
 							}
 						}
 					],
@@ -205,7 +221,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{token}}",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRvYmlhc3RvdG9yb2hyQGdtYWlsLmNvbSIsImlhdCI6MTc4NjU0NDY3MiwiZXhwIjoxNzg2NTczNDcyLCJhdWQiOiJ0aWVycmEtbWF0ZS1hZG1pbiIsImlzcyI6InRpZXJyYS1tYXRlLWFwaSIsInN1YiI6IjEifQ.uEofdIwcfsbKgxt9PWRFygS5p15u-HO2iYHAEobVMXY",
 									"type": "string"
 								}
 							]
@@ -227,10 +243,12 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/categories",
+							"raw": "http://localhost:3000/api/categories",
+							"protocol": "http",
 							"host": [
-								"{{baseUrl}}"
+								"localhost"
 							],
+							"port": "3000",
 							"path": [
 								"api",
 								"categories"
@@ -248,14 +266,16 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/categories/{{categoryId}}",
+							"raw": "http://localhost:3000/api/categories/1",
+							"protocol": "http",
 							"host": [
-								"{{baseUrl}}"
+								"localhost"
 							],
+							"port": "3000",
 							"path": [
 								"api",
 								"categories",
-								"{{categoryId}}"
+								"1"
 							]
 						}
 					},
@@ -269,7 +289,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{token}}",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRvYmlhc3RvdG9yb2hyQGdtYWlsLmNvbSIsImlhdCI6MTc4NjU0NDY3MiwiZXhwIjoxNzg2NTczNDcyLCJhdWQiOiJ0aWVycmEtbWF0ZS1hZG1pbiIsImlzcyI6InRpZXJyYS1tYXRlLWFwaSIsInN1YiI6IjEifQ.uEofdIwcfsbKgxt9PWRFygS5p15u-HO2iYHAEobVMXY",
 									"type": "string"
 								}
 							]
@@ -291,14 +311,16 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/categories/{{categoryId}}",
+							"raw": "http://localhost:3000/api/categories/5",
+							"protocol": "http",
 							"host": [
-								"{{baseUrl}}"
+								"localhost"
 							],
+							"port": "3000",
 							"path": [
 								"api",
 								"categories",
-								"{{categoryId}}"
+								"5"
 							]
 						}
 					},
@@ -312,7 +334,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{token}}",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRvYmlhc3RvdG9yb2hyQGdtYWlsLmNvbSIsImlhdCI6MTc4NjU0NDY3MiwiZXhwIjoxNzg2NTczNDcyLCJhdWQiOiJ0aWVycmEtbWF0ZS1hZG1pbiIsImlzcyI6InRpZXJyYS1tYXRlLWFwaSIsInN1YiI6IjEifQ.uEofdIwcfsbKgxt9PWRFygS5p15u-HO2iYHAEobVMXY",
 									"type": "string"
 								}
 							]
@@ -320,14 +342,16 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/categories/{{categoryId}}",
+							"raw": "http://localhost:3000/api/categories/5",
+							"protocol": "http",
 							"host": [
-								"{{baseUrl}}"
+								"localhost"
 							],
+							"port": "3000",
 							"path": [
 								"api",
 								"categories",
-								"{{categoryId}}"
+								"5"
 							]
 						}
 					},
@@ -347,10 +371,12 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/products",
+							"raw": "http://localhost:3000/api/products",
+							"protocol": "http",
 							"host": [
-								"{{baseUrl}}"
+								"localhost"
 							],
+							"port": "3000",
 							"path": [
 								"api",
 								"products"
@@ -368,10 +394,12 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/products?category_id={{categoryId}}&active=true",
+							"raw": "http://localhost:3000/api/products?category_id=1&active=true",
+							"protocol": "http",
 							"host": [
-								"{{baseUrl}}"
+								"localhost"
 							],
+							"port": "3000",
 							"path": [
 								"api",
 								"products"
@@ -379,7 +407,7 @@
 							"query": [
 								{
 									"key": "category_id",
-									"value": "{{categoryId}}"
+									"value": "1"
 								},
 								{
 									"key": "active",
@@ -396,12 +424,12 @@
 						{
 							"listen": "test",
 							"script": {
-								"type": "text/javascript",
 								"exec": [
 									"const json = pm.response.json();",
 									"pm.test('Existe data.id', () => pm.expect(json).to.have.nested.property('data.id'));",
 									"pm.environment.set('productId', json.data.id);"
-								]
+								],
+								"type": "text/javascript"
 							}
 						}
 					],
@@ -411,7 +439,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{token}}",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRvYmlhc3RvdG9yb2hyQGdtYWlsLmNvbSIsImlhdCI6MTc4NjU0NDY3MiwiZXhwIjoxNzg2NTczNDcyLCJhdWQiOiJ0aWVycmEtbWF0ZS1hZG1pbiIsImlzcyI6InRpZXJyYS1tYXRlLWFwaSIsInN1YiI6IjEifQ.uEofdIwcfsbKgxt9PWRFygS5p15u-HO2iYHAEobVMXY",
 									"type": "string"
 								}
 							]
@@ -425,7 +453,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"category_id\": \"{{categoryId}}\",\n  \"name\": \"Mate Imperial de prueba\",\n  \"description\": \"Producto creado desde Postman\",\n  \"materials\": \"Calabaza, cuero y alpaca\",\n  \"featured\": true,\n  \"active\": true\n}",
+							"raw": "{\n  \"category_id\": \"1\",\n  \"name\": \"Mate Imperial de prueba\",\n  \"description\": \"Producto creado desde Postman\",\n  \"materials\": \"Calabaza, cuero y alpaca\",\n  \"featured\": true,\n  \"active\": true\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -433,10 +461,12 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/products",
+							"raw": "http://localhost:3000/api/products",
+							"protocol": "http",
 							"host": [
-								"{{baseUrl}}"
+								"localhost"
 							],
+							"port": "3000",
 							"path": [
 								"api",
 								"products"
@@ -454,14 +484,16 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/products/{{productId}}",
+							"raw": "http://localhost:3000/api/products/1",
+							"protocol": "http",
 							"host": [
-								"{{baseUrl}}"
+								"localhost"
 							],
+							"port": "3000",
 							"path": [
 								"api",
 								"products",
-								"{{productId}}"
+								"1"
 							]
 						}
 					},
@@ -475,7 +507,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{token}}",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRvYmlhc3RvdG9yb2hyQGdtYWlsLmNvbSIsImlhdCI6MTc4NjU0NDY3MiwiZXhwIjoxNzg2NTczNDcyLCJhdWQiOiJ0aWVycmEtbWF0ZS1hZG1pbiIsImlzcyI6InRpZXJyYS1tYXRlLWFwaSIsInN1YiI6IjEifQ.uEofdIwcfsbKgxt9PWRFygS5p15u-HO2iYHAEobVMXY",
 									"type": "string"
 								}
 							]
@@ -497,14 +529,16 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/products/{{productId}}",
+							"raw": "http://localhost:3000/api/products/1",
+							"protocol": "http",
 							"host": [
-								"{{baseUrl}}"
+								"localhost"
 							],
+							"port": "3000",
 							"path": [
 								"api",
 								"products",
-								"{{productId}}"
+								"1"
 							]
 						}
 					},
@@ -518,7 +552,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{token}}",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRvYmlhc3RvdG9yb2hyQGdtYWlsLmNvbSIsImlhdCI6MTc4NjU0NDY3MiwiZXhwIjoxNzg2NTczNDcyLCJhdWQiOiJ0aWVycmEtbWF0ZS1hZG1pbiIsImlzcyI6InRpZXJyYS1tYXRlLWFwaSIsInN1YiI6IjEifQ.uEofdIwcfsbKgxt9PWRFygS5p15u-HO2iYHAEobVMXY",
 									"type": "string"
 								}
 							]
@@ -526,14 +560,16 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/products/{{productId}}",
+							"raw": "http://localhost:3000/api/products/1",
+							"protocol": "http",
 							"host": [
-								"{{baseUrl}}"
+								"localhost"
 							],
+							"port": "3000",
 							"path": [
 								"api",
 								"products",
-								"{{productId}}"
+								"1"
 							]
 						}
 					},
@@ -550,12 +586,12 @@
 						{
 							"listen": "test",
 							"script": {
-								"type": "text/javascript",
 								"exec": [
 									"const json = pm.response.json();",
 									"pm.test('Existe data.id', () => pm.expect(json).to.have.nested.property('data.id'));",
 									"pm.environment.set('variantId', json.data.id);"
-								]
+								],
+								"type": "text/javascript"
 							}
 						}
 					],
@@ -565,7 +601,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{token}}",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRvYmlhc3RvdG9yb2hyQGdtYWlsLmNvbSIsImlhdCI6MTc4NjU0NDY3MiwiZXhwIjoxNzg2NTczNDcyLCJhdWQiOiJ0aWVycmEtbWF0ZS1hZG1pbiIsImlzcyI6InRpZXJyYS1tYXRlLWFwaSIsInN1YiI6IjEifQ.uEofdIwcfsbKgxt9PWRFygS5p15u-HO2iYHAEobVMXY",
 									"type": "string"
 								}
 							]
@@ -587,14 +623,16 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/products/{{productId}}/variants",
+							"raw": "http://localhost:3000/api/products/2/variants",
+							"protocol": "http",
 							"host": [
-								"{{baseUrl}}"
+								"localhost"
 							],
+							"port": "3000",
 							"path": [
 								"api",
 								"products",
-								"{{productId}}",
+								"2",
 								"variants"
 							]
 						}
@@ -609,7 +647,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{token}}",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRvYmlhc3RvdG9yb2hyQGdtYWlsLmNvbSIsImlhdCI6MTc4NjU0NDY3MiwiZXhwIjoxNzg2NTczNDcyLCJhdWQiOiJ0aWVycmEtbWF0ZS1hZG1pbiIsImlzcyI6InRpZXJyYS1tYXRlLWFwaSIsInN1YiI6IjEifQ.uEofdIwcfsbKgxt9PWRFygS5p15u-HO2iYHAEobVMXY",
 									"type": "string"
 								}
 							]
@@ -631,16 +669,18 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/products/{{productId}}/variants/{{variantId}}",
+							"raw": "http://localhost:3000/api/products/2/variants/1",
+							"protocol": "http",
 							"host": [
-								"{{baseUrl}}"
+								"localhost"
 							],
+							"port": "3000",
 							"path": [
 								"api",
 								"products",
-								"{{productId}}",
+								"2",
 								"variants",
-								"{{variantId}}"
+								"1"
 							]
 						}
 					},
@@ -654,7 +694,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{token}}",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRvYmlhc3RvdG9yb2hyQGdtYWlsLmNvbSIsImlhdCI6MTc4NjU0NDY3MiwiZXhwIjoxNzg2NTczNDcyLCJhdWQiOiJ0aWVycmEtbWF0ZS1hZG1pbiIsImlzcyI6InRpZXJyYS1tYXRlLWFwaSIsInN1YiI6IjEifQ.uEofdIwcfsbKgxt9PWRFygS5p15u-HO2iYHAEobVMXY",
 									"type": "string"
 								}
 							]
@@ -668,7 +708,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"new_stock\": 15,\n  \"note\": \"Ingreso de mercadería desde Postman\"\n}",
+							"raw": "{\n  \"new_stock\": 100,\n  \"note\": \"Ingreso de mercadería desde Postman\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -676,16 +716,18 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/products/{{productId}}/variants/{{variantId}}/stock",
+							"raw": "http://localhost:3000/api/products/2/variants/1/stock",
+							"protocol": "http",
 							"host": [
-								"{{baseUrl}}"
+								"localhost"
 							],
+							"port": "3000",
 							"path": [
 								"api",
 								"products",
-								"{{productId}}",
+								"2",
 								"variants",
-								"{{variantId}}",
+								"1",
 								"stock"
 							]
 						}
@@ -700,7 +742,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{token}}",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRvYmlhc3RvdG9yb2hyQGdtYWlsLmNvbSIsImlhdCI6MTc4NjU0NDY3MiwiZXhwIjoxNzg2NTczNDcyLCJhdWQiOiJ0aWVycmEtbWF0ZS1hZG1pbiIsImlzcyI6InRpZXJyYS1tYXRlLWFwaSIsInN1YiI6IjEifQ.uEofdIwcfsbKgxt9PWRFygS5p15u-HO2iYHAEobVMXY",
 									"type": "string"
 								}
 							]
@@ -708,16 +750,18 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/products/{{productId}}/variants/{{variantId}}",
+							"raw": "http://localhost:3000/api/products/2/variants/1",
+							"protocol": "http",
 							"host": [
-								"{{baseUrl}}"
+								"localhost"
 							],
+							"port": "3000",
 							"path": [
 								"api",
 								"products",
-								"{{productId}}",
+								"2",
 								"variants",
-								"{{variantId}}"
+								"1"
 							]
 						}
 					},
@@ -734,12 +778,12 @@
 						{
 							"listen": "test",
 							"script": {
-								"type": "text/javascript",
 								"exec": [
 									"const json = pm.response.json();",
 									"pm.test('Existe data.id', () => pm.expect(json).to.have.nested.property('data.id'));",
 									"pm.environment.set('imageId', json.data.id);"
-								]
+								],
+								"type": "text/javascript"
 							}
 						}
 					],
@@ -749,7 +793,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{token}}",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRvYmlhc3RvdG9yb2hyQGdtYWlsLmNvbSIsImlhdCI6MTc4NjU0NDY3MiwiZXhwIjoxNzg2NTczNDcyLCJhdWQiOiJ0aWVycmEtbWF0ZS1hZG1pbiIsImlzcyI6InRpZXJyYS1tYXRlLWFwaSIsInN1YiI6IjEifQ.uEofdIwcfsbKgxt9PWRFygS5p15u-HO2iYHAEobVMXY",
 									"type": "string"
 								}
 							]
@@ -771,14 +815,16 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/products/{{productId}}/images",
+							"raw": "http://localhost:3000/api/products/2/images",
+							"protocol": "http",
 							"host": [
-								"{{baseUrl}}"
+								"localhost"
 							],
+							"port": "3000",
 							"path": [
 								"api",
 								"products",
-								"{{productId}}",
+								"2",
 								"images"
 							]
 						},
@@ -794,7 +840,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{token}}",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRvYmlhc3RvdG9yb2hyQGdtYWlsLmNvbSIsImlhdCI6MTc4NjU0NDY3MiwiZXhwIjoxNzg2NTczNDcyLCJhdWQiOiJ0aWVycmEtbWF0ZS1hZG1pbiIsImlzcyI6InRpZXJyYS1tYXRlLWFwaSIsInN1YiI6IjEifQ.uEofdIwcfsbKgxt9PWRFygS5p15u-HO2iYHAEobVMXY",
 									"type": "string"
 								}
 							]
@@ -816,16 +862,18 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/products/{{productId}}/images/{{imageId}}",
+							"raw": "http://localhost:3000/api/products/2/images/1",
+							"protocol": "http",
 							"host": [
-								"{{baseUrl}}"
+								"localhost"
 							],
+							"port": "3000",
 							"path": [
 								"api",
 								"products",
-								"{{productId}}",
+								"2",
 								"images",
-								"{{imageId}}"
+								"1"
 							]
 						}
 					},
@@ -839,7 +887,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{token}}",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRvYmlhc3RvdG9yb2hyQGdtYWlsLmNvbSIsImlhdCI6MTc4NjU0NDY3MiwiZXhwIjoxNzg2NTczNDcyLCJhdWQiOiJ0aWVycmEtbWF0ZS1hZG1pbiIsImlzcyI6InRpZXJyYS1tYXRlLWFwaSIsInN1YiI6IjEifQ.uEofdIwcfsbKgxt9PWRFygS5p15u-HO2iYHAEobVMXY",
 									"type": "string"
 								}
 							]
@@ -847,16 +895,18 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/products/{{productId}}/images/{{imageId}}",
+							"raw": "http://localhost:3000/api/products/2/images/1",
+							"protocol": "http",
 							"host": [
-								"{{baseUrl}}"
+								"localhost"
 							],
+							"port": "3000",
 							"path": [
 								"api",
 								"products",
-								"{{productId}}",
+								"2",
 								"images",
-								"{{imageId}}"
+								"1"
 							]
 						}
 					},
@@ -873,12 +923,12 @@
 						{
 							"listen": "test",
 							"script": {
-								"type": "text/javascript",
 								"exec": [
 									"const json = pm.response.json();",
 									"pm.test('Existe data.id', () => pm.expect(json).to.have.nested.property('data.id'));",
 									"pm.environment.set('personalizationId', json.data.id);"
-								]
+								],
+								"type": "text/javascript"
 							}
 						}
 					],
@@ -888,7 +938,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{token}}",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRvYmlhc3RvdG9yb2hyQGdtYWlsLmNvbSIsImlhdCI6MTc4NjU0NDY3MiwiZXhwIjoxNzg2NTczNDcyLCJhdWQiOiJ0aWVycmEtbWF0ZS1hZG1pbiIsImlzcyI6InRpZXJyYS1tYXRlLWFwaSIsInN1YiI6IjEifQ.uEofdIwcfsbKgxt9PWRFygS5p15u-HO2iYHAEobVMXY",
 									"type": "string"
 								}
 							]
@@ -910,14 +960,16 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/products/{{productId}}/personalizations",
+							"raw": "http://localhost:3000/api/products/2/personalizations",
+							"protocol": "http",
 							"host": [
-								"{{baseUrl}}"
+								"localhost"
 							],
+							"port": "3000",
 							"path": [
 								"api",
 								"products",
-								"{{productId}}",
+								"2",
 								"personalizations"
 							]
 						}
@@ -932,7 +984,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{token}}",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRvYmlhc3RvdG9yb2hyQGdtYWlsLmNvbSIsImlhdCI6MTc4NjU0NDY3MiwiZXhwIjoxNzg2NTczNDcyLCJhdWQiOiJ0aWVycmEtbWF0ZS1hZG1pbiIsImlzcyI6InRpZXJyYS1tYXRlLWFwaSIsInN1YiI6IjEifQ.uEofdIwcfsbKgxt9PWRFygS5p15u-HO2iYHAEobVMXY",
 									"type": "string"
 								}
 							]
@@ -954,16 +1006,18 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/products/{{productId}}/personalizations/{{personalizationId}}",
+							"raw": "http://localhost:3000/api/products/2/personalizations/1",
+							"protocol": "http",
 							"host": [
-								"{{baseUrl}}"
+								"localhost"
 							],
+							"port": "3000",
 							"path": [
 								"api",
 								"products",
-								"{{productId}}",
+								"2",
 								"personalizations",
-								"{{personalizationId}}"
+								"1"
 							]
 						}
 					},
@@ -977,7 +1031,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "{{token}}",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRvYmlhc3RvdG9yb2hyQGdtYWlsLmNvbSIsImlhdCI6MTc4NjU0NDY3MiwiZXhwIjoxNzg2NTczNDcyLCJhdWQiOiJ0aWVycmEtbWF0ZS1hZG1pbiIsImlzcyI6InRpZXJyYS1tYXRlLWFwaSIsInN1YiI6IjEifQ.uEofdIwcfsbKgxt9PWRFygS5p15u-HO2iYHAEobVMXY",
 									"type": "string"
 								}
 							]
@@ -985,16 +1039,18 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/products/{{productId}}/personalizations/{{personalizationId}}",
+							"raw": "http://localhost:3000/api/products/2/personalizations/1",
+							"protocol": "http",
 							"host": [
-								"{{baseUrl}}"
+								"localhost"
 							],
+							"port": "3000",
 							"path": [
 								"api",
 								"products",
-								"{{productId}}",
+								"2",
 								"personalizations",
-								"{{personalizationId}}"
+								"1"
 							]
 						}
 					},
