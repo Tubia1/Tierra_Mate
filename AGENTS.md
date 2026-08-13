@@ -10,10 +10,15 @@ Construir una tienda web de mates, bombillas, accesorios y sets. El catálogo es
 - `apps/api` contiene una API Node.js + Express 5 con módulos ES.
 - `database/migrations/001_initial_schema.sql` contiene el esquema inicial para PostgreSQL alojado en Supabase.
 - Están implementados autenticación administrativa y CRUD de categorías, productos, variantes, imágenes, personalizaciones y ajustes manuales de stock.
-- Todavía no están implementados los endpoints de pedidos, reservas, vencimiento, confirmación de ventas, carga real a Supabase Storage ni el frontend React.
+- Todavia no estan implementados los endpoints de vencimiento, confirmacion de ventas, cancelacion, carga real a Supabase Storage ni el frontend React.
 - No presentar algo como terminado solamente porque su tabla exista.
 
 ## Arquitectura y estructura
+
+Nota de estado: esta implementado `POST /api/orders` para crear pedidos publicos
+con reserva temporal y enlace de WhatsApp. Siguen pendientes los endpoints de
+vencimiento, confirmacion de ventas, cancelacion, carga real a Supabase Storage
+y el frontend React.
 
 - Mantener un solo repositorio con `apps/api` y, cuando se cree, `apps/web`.
 - Backend: route/controller -> service -> repository -> PostgreSQL.
@@ -59,6 +64,7 @@ Construir una tienda web de mates, bombillas, accesorios y sets. El catálogo es
 - Crear administrador inicial: `npm run admin:create --workspace @tierra-mate/api`
 - Salud: `GET /api/health`
 - Base de datos: `GET /api/health/database`
+- Crear pedido publico con reserva: `POST /api/orders`
 
 ## Criterio de finalización
 

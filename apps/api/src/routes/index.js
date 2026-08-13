@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authController } from '../controllers/authController.js';
 import { categoryController } from '../controllers/categoryController.js';
+import { orderController } from '../controllers/orderController.js';
 import { productController } from '../controllers/productController.js';
 import { asyncHandler } from '../helpers/asyncHandler.js';
 import { query } from '../database/pool.js';
@@ -18,4 +19,5 @@ apiRouter.get('/health/database', asyncHandler(async (_req, res) => {
 
 apiRouter.use('/auth', authController);
 apiRouter.use('/categories', categoryController);
+apiRouter.use('/orders', orderController);
 apiRouter.use('/products', productController);

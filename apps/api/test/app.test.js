@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
 import { app } from '../src/app.js';
+import { orderCreateBody } from '../src/schemas/orderSchemas.js';
 import { productUpdateBody, variantUpdateBody } from '../src/schemas/productSchemas.js';
 
 test('GET / responde con informacion de la API', async () => {
@@ -42,4 +43,11 @@ test('PATCH no agrega valores predeterminados a campos ausentes', () => {
 
 test('el stock no puede cambiarse desde el PATCH común de variante', () => {
   assert.throws(() => variantUpdateBody.parse({ stock_quantity: 20 }));
+});
+
+test('orderCreateBody valida los datos obligatorios del pedido', () => {
+  assert.throws(() => orderCreateBody.parse({
+    customer: { name: 'Ana', phone: '1122334455', locality: 'Moron' },
+    items: [{ variant_id: 1, quantity: 1 }],
+  }));
 });

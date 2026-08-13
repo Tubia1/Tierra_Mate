@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "test": "NODE_ENV=test JWT_SECRET=test-secret-with-at-least-32-characters node --test",
+    "test": "node --import ./test/setup-env.js --test test/app.test.js test/services.test.js",
     "admin:create": "node scripts/createAdmin.js"
   },
   "dependencies": {

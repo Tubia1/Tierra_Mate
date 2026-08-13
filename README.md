@@ -36,6 +36,7 @@ quitá `ADMIN_BOOTSTRAP_PASSWORD` del archivo `.env`.
 ### Rutas principales
 
 - `POST /api/auth/login`
+- `POST /api/orders`
 - `GET|POST /api/categories`
 - `GET|PATCH|DELETE /api/categories/:id`
 - `GET|POST /api/products`
@@ -48,5 +49,38 @@ quitá `ADMIN_BOOTSTRAP_PASSWORD` del archivo `.env`.
 - `POST /api/products/:productId/personalizations`
 - `PATCH|DELETE /api/products/:productId/personalizations/:id`
 
-Las rutas de lectura son públicas. Las escrituras requieren
+Las rutas de lectura son publicas. Las escrituras administrativas requieren
 `Authorization: Bearer <token>`.
+
+### Pedidos publicos
+
+`POST /api/orders` crea un pedido con estado `reserved`, reserva disponibilidad
+durante los minutos configurados en `store_settings` y devuelve el mensaje/URL
+de WhatsApp. La reserva no modifica `stock_quantity`; el stock fisico se
+descuenta recien al confirmar la venta.
+
+Ejemplo minimo:
+
+```json
+{
+  "customer": {
+    "name": "Ana Gomez",
+    "phone": "1122334455",
+    "locality": "Moron",
+    "address": "Av. Siempre Viva 123"
+  },
+  "items": [
+    {
+      "variant_id": 1,
+      "quantity": 2,
+      "personalizations": [
+        {
+          "option_id": 1,
+          "selected_value": "iniciales",
+          "customer_note": "AG"
+        }
+      ]
+    }
+  ]
+}
+```
