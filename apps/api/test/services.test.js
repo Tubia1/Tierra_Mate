@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { executeTransaction } from '../src/database/pool.js';
 import { createCategoryService } from '../src/services/categoryService.js';
 import { createOrderService } from '../src/services/orderService.js';
 import { createProductService } from '../src/services/productService.js';
@@ -207,4 +208,146 @@ test('orderService devuelve el detalle con items y personalizaciones', async () 
   const result = await service.getById(77);
   assert.equal(result.items[0].product_name, 'Mate Premium');
   assert.equal(result.items[0].personalizations[0].option_name, 'Grabado');
+});
+
+function createOrderTransitionRepository(order, overrides = {}) {
+  const calls = {
+    cancelled: 0,
+    expired: 0,
+    stockChanges: 0,
+    inventoryMovements: 0,
+  };
+  let currentOrder = order ? { ...order } : null;
+  return {
+    calls,
+    transaction: async (callback) => callback({}),
+    lockOrder: async () => currentOrder,
+    cancelOrder: async (_client, _id, reason) => {
+      calls.cancelled += 1;
+      currentOrder = {
+        ...currentOrder,
+        status: 'cancelled',
+        cancelled_at: '2026-08-14T12:00:00.000Z',
+        cancellation_reason: reason,
+      };
+      return currentOrder;
+    },
+    markOrderExpired: async () => {
+      calls.expired += 1;
+      currentOrder = { ...currentOrder, status: 'expired' };
+      return currentOrder;
+    },
+    changeStock: async () => { calls.stockChanges += 1; },
+    createInventoryMovement: async () => { calls.inventoryMovements += 1; },
+    ...overrides,
+  };
+}
+
+test('orderService cancela una reserva activa sin tocar inventario', async () => {
+  const repository = createOrderTransitionRepository({
+    id: 77,
+    code: 'TMS-000077',
+    status: 'reserved',
+    reservation_expired: false,
+  });
+  const service = createOrderService(repository);
+
+  const result = await service.cancel(77, { reason: 'El cliente cancelo' });
+
+  assert.equal(result.status, 'cancelled');
+  assert.equal(result.cancellation_reason, 'El cliente cancelo');
+  assert.equal(repository.calls.cancelled, 1);
+  assert.equal(repository.calls.stockChanges, 0);
+  assert.equal(repository.calls.inventoryMovements, 0);
+});
+
+test('orderService hace idempotente una cancelacion repetida', async () => {
+  const repository = createOrderTransitionRepository({
+    id: 77,
+    code: 'TMS-000077',
+    status: 'cancelled',
+    cancelled_at: '2026-08-14T12:00:00.000Z',
+  });
+  const result = await createOrderService(repository).cancel(77, { reason: 'otra razon' });
+
+  assert.equal(result.status, 'cancelled');
+  assert.equal(repository.calls.cancelled, 0);
+});
+
+test('orderService devuelve ORDER_NOT_FOUND al cancelar un pedido inexistente', async () => {
+  const repository = createOrderTransitionRepository(null);
+  await assert.rejects(
+    createOrderService(repository).cancel(999, {}),
+    (error) => error.statusCode === 404 && error.code === 'ORDER_NOT_FOUND',
+  );
+});
+
+for (const status of ['confirmed', 'preparing', 'completed']) {
+  test(`orderService no permite cancelar un pedido ${status}`, async () => {
+    const repository = createOrderTransitionRepository({ id: 77, status });
+    await assert.rejects(
+      createOrderService(repository).cancel(77, {}),
+      (error) => error.statusCode === 409 && error.code === 'INVALID_ORDER_STATUS',
+    );
+    assert.equal(repository.calls.cancelled, 0);
+  });
+}
+
+test('orderService vence y rechaza la cancelacion de una reserva vencida', async () => {
+  const repository = createOrderTransitionRepository({
+    id: 77,
+    code: 'TMS-000077',
+    status: 'reserved',
+    reservation_expired: true,
+  });
+
+  await assert.rejects(
+    createOrderService(repository).cancel(77, {}),
+    (error) => error.statusCode === 409
+      && error.code === 'RESERVATION_EXPIRED'
+      && error.details.order.status === 'expired',
+  );
+  assert.equal(repository.calls.expired, 1);
+  assert.equal(repository.calls.cancelled, 0);
+});
+
+test('orderService vence solo reservas terminadas y la operacion es idempotente', async () => {
+  const storedOrders = [
+    { id: '1', code: 'TMS-000001', status: 'reserved', expiredByTime: true },
+    { id: '2', code: 'TMS-000002', status: 'reserved', expiredByTime: true },
+    { id: '3', code: 'TMS-000003', status: 'reserved', expiredByTime: false },
+  ];
+  const repository = createOrderTransitionRepository(null, {
+    expireReservations: async () => {
+      const expired = storedOrders.filter((order) => order.status === 'reserved' && order.expiredByTime);
+      for (const order of expired) order.status = 'expired';
+      return expired.map(({ id, code }) => ({ id, code }));
+    },
+  });
+  const service = createOrderService(repository);
+
+  assert.deepEqual(await service.expire(), {
+    expired_count: 2,
+    orders: [{ id: '1', code: 'TMS-000001' }, { id: '2', code: 'TMS-000002' }],
+  });
+  assert.deepEqual(await service.expire(), { expired_count: 0, orders: [] });
+  assert.equal(storedOrders[2].status, 'reserved');
+  assert.equal(repository.calls.stockChanges, 0);
+  assert.equal(repository.calls.inventoryMovements, 0);
+});
+
+test('executeTransaction hace rollback y libera el cliente ante un error', async () => {
+  const statements = [];
+  let released = false;
+  const client = {
+    query: async (statement) => { statements.push(statement); },
+    release: () => { released = true; },
+  };
+
+  await assert.rejects(
+    executeTransaction(client, async () => { throw new Error('fallo intermedio'); }),
+    /fallo intermedio/,
+  );
+  assert.deepEqual(statements, ['begin', 'rollback']);
+  assert.equal(released, true);
 });

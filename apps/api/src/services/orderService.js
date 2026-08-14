@@ -111,6 +111,39 @@ function buildWhatsappUrl(number, message) {
 export function createOrderService(repository = defaultRepository) {
   return {
     list: (filters) => repository.list(filters),
+    expire: async () => {
+      const orders = await repository.transaction((client) => repository.expireReservations(client));
+      return { expired_count: orders.length, orders };
+    },
+    cancel: async (id, { reason } = {}) => {
+      const result = await repository.transaction(async (client) => {
+        const order = await repository.lockOrder(client, id);
+        if (!order) throw new AppError('Pedido no encontrado', 404, 'ORDER_NOT_FOUND');
+
+        if (order.status === 'cancelled') return { outcome: 'cancelled', order };
+
+        if (order.status !== 'reserved') {
+          throw new AppError('El pedido no se puede cancelar en su estado actual', 409, 'INVALID_ORDER_STATUS');
+        }
+
+        if (order.reservation_expired) {
+          const expiredOrder = await repository.markOrderExpired(client, id);
+          return { outcome: 'expired', order: expiredOrder };
+        }
+
+        return {
+          outcome: 'cancelled',
+          order: await repository.cancelOrder(client, id, reason ?? null),
+        };
+      });
+
+      if (result.outcome === 'expired') {
+        throw new AppError('La reserva ya vencio', 409, 'RESERVATION_EXPIRED', {
+          order: result.order,
+        });
+      }
+      return result.order;
+    },
     getById: async (id) => {
       const order = await repository.findById(id);
       if (!order) throw new AppError('Pedido no encontrado', 404, 'ORDER_NOT_FOUND');

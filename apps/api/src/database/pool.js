@@ -33,6 +33,10 @@ export function query(text, params = []) {
 
 export async function withTransaction(callback) {
   const client = await getPool().connect();
+  return executeTransaction(client, callback);
+}
+
+export async function executeTransaction(client, callback) {
   try {
     await client.query('begin');
     const result = await callback(client);

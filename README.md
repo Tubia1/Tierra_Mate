@@ -39,6 +39,8 @@ quitá `ADMIN_BOOTSTRAP_PASSWORD` del archivo `.env`.
 - `POST /api/orders`
 - `GET /api/orders` (administrativa, con filtros y paginacion por cursor)
 - `GET /api/orders/:id` (administrativa, incluye items y personalizaciones)
+- `PATCH /api/orders/:id/cancel` (administrativa, cancela una reserva activa)
+- `POST /api/orders/expire` (administrativa, vence reservas cuyo plazo termino)
 - `GET|POST /api/categories`
 - `GET|PATCH|DELETE /api/categories/:id`
 - `GET|POST /api/products`
@@ -60,6 +62,10 @@ consultas de pedidos requieren `Authorization: Bearer <token>`.
 durante los minutos configurados en `store_settings` y devuelve el mensaje/URL
 de WhatsApp. La reserva no modifica `stock_quantity`; el stock fisico se
 descuenta recien al confirmar la venta.
+
+Las cancelaciones y el vencimiento cambian solamente el estado del pedido: no
+modifican el stock fisico ni crean movimientos de inventario. Por ahora el
+vencimiento se ejecuta manualmente mediante el endpoint administrativo.
 
 Ejemplo minimo:
 

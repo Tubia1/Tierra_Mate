@@ -8,6 +8,10 @@ const orderStatus = z.enum([
 
 export const orderIdParams = z.object({ id });
 
+export const orderCancelBody = z.object({
+  reason: z.string().trim().max(500).optional(),
+}).strict().default({});
+
 export const orderListQuery = z.object({
   cursor: id.optional(),
   limit: z.coerce.number().int().min(1).max(100).default(20),

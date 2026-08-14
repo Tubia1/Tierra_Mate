@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import { app } from '../src/app.js';
-import { orderCreateBody, orderListQuery } from '../src/schemas/orderSchemas.js';
+import { orderCancelBody, orderCreateBody, orderListQuery } from '../src/schemas/orderSchemas.js';
 import { productUpdateBody, variantUpdateBody } from '../src/schemas/productSchemas.js';
 
 test('GET / responde con informacion de la API', async () => {
@@ -87,6 +87,46 @@ test('el listado rechaza filtros de estado invalidos', async () => {
     .set('Authorization', `Bearer ${token}`)
     .expect(400);
   assert.equal(response.body.error.code, 'VALIDATION_ERROR');
+});
+
+test('los endpoints de cancelacion y vencimiento requieren autenticacion', async () => {
+  const cancelResponse = await request(app).patch('/api/orders/1/cancel').send({}).expect(401);
+  assert.equal(cancelResponse.body.error.code, 'AUTH_REQUIRED');
+
+  const expireResponse = await request(app).post('/api/orders/expire').expect(401);
+  assert.equal(expireResponse.body.error.code, 'AUTH_REQUIRED');
+});
+
+test('la cancelacion valida identificadores invalidos', async () => {
+  const token = jwt.sign(
+    { sub: '1', email: 'admin@example.com' },
+    process.env.JWT_SECRET,
+    { issuer: 'tierra-mate-api', audience: 'tierra-mate-admin' },
+  );
+  const response = await request(app)
+    .patch('/api/orders/no-es-un-id/cancel')
+    .set('Authorization', `Bearer ${token}`)
+    .send({})
+    .expect(400);
+  assert.equal(response.body.error.code, 'VALIDATION_ERROR');
+});
+
+test('la cancelacion valida la longitud de la razon', async () => {
+  const token = jwt.sign(
+    { sub: '1', email: 'admin@example.com' },
+    process.env.JWT_SECRET,
+    { issuer: 'tierra-mate-api', audience: 'tierra-mate-admin' },
+  );
+  const response = await request(app)
+    .patch('/api/orders/1/cancel')
+    .set('Authorization', `Bearer ${token}`)
+    .send({ reason: 'x'.repeat(501) })
+    .expect(400);
+  assert.equal(response.body.error.code, 'VALIDATION_ERROR');
+});
+
+test('el body de cancelacion puede omitirse', () => {
+  assert.deepEqual(orderCancelBody.parse(undefined), {});
 });
 
 test('orderListQuery aplica el limite predeterminado y sus limites', () => {

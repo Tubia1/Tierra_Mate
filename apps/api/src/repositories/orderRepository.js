@@ -81,6 +81,50 @@ export function transaction(callback) {
   return withTransaction(callback);
 }
 
+export async function lockOrder(client, id) {
+  const result = await client.query(
+    `select o.*, (o.reserved_until <= now()) as reservation_expired
+     from public.orders o
+     where o.id = $1
+     for update`,
+    [id],
+  );
+  return result.rows[0] ?? null;
+}
+
+export async function cancelOrder(client, id, reason) {
+  const result = await client.query(
+    `update public.orders
+     set status = 'cancelled', cancelled_at = now(), cancellation_reason = $2
+     where id = $1 and status = 'reserved'
+     returning *`,
+    [id, reason],
+  );
+  return result.rows[0];
+}
+
+export async function markOrderExpired(client, id) {
+  const result = await client.query(
+    `update public.orders
+     set status = 'expired'
+     where id = $1 and status = 'reserved'
+     returning *`,
+    [id],
+  );
+  return result.rows[0];
+}
+
+export async function expireReservations(client) {
+  const result = await client.query(
+    `update public.orders
+     set status = 'expired'
+     where status = 'reserved'
+       and reserved_until <= now()
+     returning id, code`,
+  );
+  return result.rows;
+}
+
 export async function getStoreSettings(client) {
   const result = await client.query(
     `select store_name, whatsapp_number, reservation_minutes, currency
