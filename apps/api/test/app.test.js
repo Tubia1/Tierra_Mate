@@ -3,7 +3,12 @@ import assert from 'node:assert/strict';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import { app } from '../src/app.js';
-import { orderCancelBody, orderCreateBody, orderListQuery } from '../src/schemas/orderSchemas.js';
+import {
+  orderCancelBody,
+  orderConfirmBody,
+  orderCreateBody,
+  orderListQuery,
+} from '../src/schemas/orderSchemas.js';
 import { productUpdateBody, variantUpdateBody } from '../src/schemas/productSchemas.js';
 
 test('GET / responde con informacion de la API', async () => {
@@ -127,6 +132,42 @@ test('la cancelacion valida la longitud de la razon', async () => {
 
 test('el body de cancelacion puede omitirse', () => {
   assert.deepEqual(orderCancelBody.parse(undefined), {});
+});
+
+test('la confirmacion requiere autenticacion', async () => {
+  const response = await request(app).patch('/api/orders/1/confirm').expect(401);
+  assert.equal(response.body.error.code, 'AUTH_REQUIRED');
+});
+
+test('la confirmacion valida identificadores invalidos', async () => {
+  const token = jwt.sign(
+    { sub: '1', email: 'admin@example.com' },
+    process.env.JWT_SECRET,
+    { issuer: 'tierra-mate-api', audience: 'tierra-mate-admin' },
+  );
+  const response = await request(app)
+    .patch('/api/orders/no-es-un-id/confirm')
+    .set('Authorization', `Bearer ${token}`)
+    .expect(400);
+  assert.equal(response.body.error.code, 'VALIDATION_ERROR');
+});
+
+test('la confirmacion no acepta cantidades ni variantes en el body', async () => {
+  const token = jwt.sign(
+    { sub: '1', email: 'admin@example.com' },
+    process.env.JWT_SECRET,
+    { issuer: 'tierra-mate-api', audience: 'tierra-mate-admin' },
+  );
+  const response = await request(app)
+    .patch('/api/orders/1/confirm')
+    .set('Authorization', `Bearer ${token}`)
+    .send({ variant_id: 10, quantity: 999 })
+    .expect(400);
+  assert.equal(response.body.error.code, 'VALIDATION_ERROR');
+});
+
+test('el body de confirmacion puede omitirse', () => {
+  assert.deepEqual(orderConfirmBody.parse(undefined), {});
 });
 
 test('orderListQuery aplica el limite predeterminado y sus limites', () => {

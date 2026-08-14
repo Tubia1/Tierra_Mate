@@ -125,6 +125,72 @@ export async function expireReservations(client) {
   return result.rows;
 }
 
+export async function getOrderItemsForConfirmation(client, orderId) {
+  const result = await client.query(
+    `select variant_id, quantity
+     from public.order_items
+     where order_id = $1
+     order by variant_id asc, id asc`,
+    [orderId],
+  );
+  return result.rows;
+}
+
+export async function lockVariantsForConfirmation(client, variantIds) {
+  const result = await client.query(
+    `select id, stock_quantity
+     from public.product_variants
+     where id = any($1::bigint[])
+     order by id asc
+     for update`,
+    [variantIds],
+  );
+  return result.rows;
+}
+
+export async function decreaseVariantStock(client, variantId, quantity) {
+  const result = await client.query(
+    `update public.product_variants
+     set stock_quantity = stock_quantity - $2
+     where id = $1
+       and stock_quantity >= $2
+     returning id, stock_quantity`,
+    [variantId, quantity],
+  );
+  return result.rows[0] ?? null;
+}
+
+export async function createConfirmedSaleMovement(client, movement) {
+  const result = await client.query(
+    `insert into public.inventory_movements
+       (variant_id, order_id, admin_user_id, movement_type, quantity_change,
+        previous_stock, new_stock, note)
+     values ($1, $2, $3, 'confirmed_sale', $4, $5, $6, $7)
+     returning *`,
+    [
+      movement.variantId,
+      movement.orderId,
+      movement.adminUserId,
+      movement.quantityChange,
+      movement.previousStock,
+      movement.newStock,
+      movement.note,
+    ],
+  );
+  return result.rows[0];
+}
+
+export async function confirmOrder(client, id) {
+  const result = await client.query(
+    `update public.orders
+     set status = 'confirmed', confirmed_at = now()
+     where id = $1 and status = 'reserved'
+     returning *`,
+    [id],
+  );
+  return result.rows[0];
+}
+
 export async function getStoreSettings(client) {
   const result = await client.query(
     `select store_name, whatsapp_number, reservation_minutes, currency

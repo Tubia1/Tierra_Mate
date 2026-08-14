@@ -39,6 +39,17 @@ function assertNoDuplicateVariants(items) {
   }
 }
 
+function groupQuantitiesByVariant(items) {
+  const quantities = new Map();
+  for (const item of items) {
+    const variantId = Number(item.variant_id);
+    quantities.set(variantId, (quantities.get(variantId) ?? 0) + Number(item.quantity));
+  }
+  return [...quantities.entries()]
+    .map(([variantId, quantity]) => ({ variantId, quantity }))
+    .sort((a, b) => a.variantId - b.variantId);
+}
+
 function assertNoDuplicatePersonalizations(personalizations) {
   const seen = new Set();
   for (const personalization of personalizations) {
@@ -143,6 +154,75 @@ export function createOrderService(repository = defaultRepository) {
         });
       }
       return result.order;
+    },
+    confirm: async (id, adminUserId) => {
+      const result = await repository.transaction(async (client) => {
+        const order = await repository.lockOrder(client, id);
+        if (!order) throw new AppError('Pedido no encontrado', 404, 'ORDER_NOT_FOUND');
+
+        if (order.status === 'confirmed') return { outcome: 'confirmed' };
+
+        if (order.status !== 'reserved') {
+          throw new AppError('El pedido no se puede confirmar en su estado actual', 409, 'INVALID_ORDER_STATUS');
+        }
+
+        if (order.reservation_expired) {
+          await repository.markOrderExpired(client, id);
+          return { outcome: 'expired' };
+        }
+
+        const items = await repository.getOrderItemsForConfirmation(client, id);
+        const requestedVariants = groupQuantitiesByVariant(items);
+        const variantIds = requestedVariants.map(({ variantId }) => variantId);
+        const variants = await repository.lockVariantsForConfirmation(client, variantIds);
+        const variantsById = mapById(variants);
+
+        if (variants.length !== variantIds.length) {
+          throw new AppError('Una o mas variantes del pedido no existen', 409, 'INSUFFICIENT_STOCK');
+        }
+
+        for (const { variantId, quantity } of requestedVariants) {
+          const variant = variantsById.get(variantId);
+          const previousStock = Number(variant.stock_quantity);
+          if (previousStock < quantity) {
+            throw new AppError('Stock fisico insuficiente para confirmar el pedido', 409, 'INSUFFICIENT_STOCK', {
+              variant_id: variantId,
+              available: previousStock,
+              requested: quantity,
+            });
+          }
+
+          const updatedVariant = await repository.decreaseVariantStock(client, variantId, quantity);
+          if (!updatedVariant) {
+            throw new AppError('Stock fisico insuficiente para confirmar el pedido', 409, 'INSUFFICIENT_STOCK', {
+              variant_id: variantId,
+              available: previousStock,
+              requested: quantity,
+            });
+          }
+
+          await repository.createConfirmedSaleMovement(client, {
+            variantId,
+            orderId: id,
+            adminUserId,
+            quantityChange: -quantity,
+            previousStock,
+            newStock: Number(updatedVariant.stock_quantity),
+            note: `Venta confirmada del pedido ${order.code}`,
+          });
+        }
+
+        await repository.confirmOrder(client, id);
+        return { outcome: 'confirmed' };
+      });
+
+      if (result.outcome === 'expired') {
+        throw new AppError('La reserva ya vencio', 409, 'RESERVATION_EXPIRED');
+      }
+
+      const confirmedOrder = await repository.findById(id);
+      if (!confirmedOrder) throw new AppError('Pedido no encontrado', 404, 'ORDER_NOT_FOUND');
+      return confirmedOrder;
     },
     getById: async (id) => {
       const order = await repository.findById(id);

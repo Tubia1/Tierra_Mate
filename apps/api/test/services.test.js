@@ -351,3 +351,202 @@ test('executeTransaction hace rollback y libera el cliente ante un error', async
   assert.deepEqual(statements, ['begin', 'rollback']);
   assert.equal(released, true);
 });
+
+function createConfirmationRepository({
+  order = {
+    id: 77,
+    code: 'TMS-000077',
+    status: 'reserved',
+    reservation_expired: false,
+  },
+  items = [{ variant_id: 10, quantity: 2 }],
+  stocks = { 10: 5 },
+  failMovementAt = null,
+} = {}) {
+  let currentOrder = order ? { ...order } : null;
+  const currentStocks = new Map(Object.entries(stocks).map(([id, stock]) => [Number(id), stock]));
+  const movements = [];
+  let confirmedUpdates = 0;
+
+  const repository = {
+    transaction: async (callback) => {
+      const orderSnapshot = currentOrder ? { ...currentOrder } : null;
+      const stockSnapshot = new Map(currentStocks);
+      const movementCount = movements.length;
+      const confirmedSnapshot = confirmedUpdates;
+      try {
+        return await callback({});
+      } catch (error) {
+        currentOrder = orderSnapshot;
+        currentStocks.clear();
+        for (const [id, stock] of stockSnapshot) currentStocks.set(id, stock);
+        movements.splice(movementCount);
+        confirmedUpdates = confirmedSnapshot;
+        throw error;
+      }
+    },
+    lockOrder: async () => currentOrder,
+    markOrderExpired: async () => {
+      currentOrder = { ...currentOrder, status: 'expired' };
+      return currentOrder;
+    },
+    getOrderItemsForConfirmation: async () => items,
+    lockVariantsForConfirmation: async (_client, variantIds) => variantIds
+      .filter((id) => currentStocks.has(id))
+      .map((id) => ({ id, stock_quantity: currentStocks.get(id) })),
+    decreaseVariantStock: async (_client, variantId, quantity) => {
+      const stock = currentStocks.get(variantId);
+      if (stock < quantity) return null;
+      currentStocks.set(variantId, stock - quantity);
+      return { id: variantId, stock_quantity: stock - quantity };
+    },
+    createConfirmedSaleMovement: async (_client, movement) => {
+      if (failMovementAt === movements.length + 1) throw new Error('fallo creando movimiento');
+      movements.push({ ...movement, movement_type: 'confirmed_sale' });
+      return movements.at(-1);
+    },
+    confirmOrder: async () => {
+      confirmedUpdates += 1;
+      currentOrder = {
+        ...currentOrder,
+        status: 'confirmed',
+        confirmed_at: '2026-08-14T13:00:00.000Z',
+      };
+      return currentOrder;
+    },
+    findById: async () => (currentOrder ? { ...currentOrder, items } : null),
+    state: () => ({
+      order: currentOrder,
+      stocks: Object.fromEntries(currentStocks),
+      movements,
+      confirmedUpdates,
+    }),
+  };
+  return repository;
+}
+
+test('orderService confirma una reserva, descuenta stock y registra al administrador', async () => {
+  const repository = createConfirmationRepository();
+  const result = await createOrderService(repository).confirm(77, '42');
+  const state = repository.state();
+
+  assert.equal(result.status, 'confirmed');
+  assert.equal(result.confirmed_at, '2026-08-14T13:00:00.000Z');
+  assert.deepEqual(result.items, [{ variant_id: 10, quantity: 2 }]);
+  assert.equal(state.stocks[10], 3);
+  assert.equal(state.movements.length, 1);
+  assert.deepEqual(state.movements[0], {
+    variantId: 10,
+    orderId: 77,
+    adminUserId: '42',
+    quantityChange: -2,
+    previousStock: 5,
+    newStock: 3,
+    note: 'Venta confirmada del pedido TMS-000077',
+    movement_type: 'confirmed_sale',
+  });
+});
+
+test('orderService hace idempotente la confirmacion repetida', async () => {
+  const repository = createConfirmationRepository();
+  const service = createOrderService(repository);
+
+  await service.confirm(77, '42');
+  await service.confirm(77, '42');
+
+  const state = repository.state();
+  assert.equal(state.stocks[10], 3);
+  assert.equal(state.movements.length, 1);
+  assert.equal(state.confirmedUpdates, 1);
+});
+
+test('orderService devuelve ORDER_NOT_FOUND al confirmar un pedido inexistente', async () => {
+  const repository = createConfirmationRepository({ order: null });
+  await assert.rejects(
+    createOrderService(repository).confirm(999, '42'),
+    (error) => error.statusCode === 404 && error.code === 'ORDER_NOT_FOUND',
+  );
+});
+
+for (const status of ['cancelled', 'expired', 'preparing', 'completed']) {
+  test(`orderService no permite confirmar un pedido ${status}`, async () => {
+    const repository = createConfirmationRepository({
+      order: { id: 77, code: 'TMS-000077', status, reservation_expired: false },
+    });
+    await assert.rejects(
+      createOrderService(repository).confirm(77, '42'),
+      (error) => error.statusCode === 409 && error.code === 'INVALID_ORDER_STATUS',
+    );
+    assert.equal(repository.state().movements.length, 0);
+  });
+}
+
+test('orderService no confirma ni descuenta una reserva vencida', async () => {
+  const repository = createConfirmationRepository({
+    order: {
+      id: 77,
+      code: 'TMS-000077',
+      status: 'reserved',
+      reservation_expired: true,
+    },
+  });
+
+  await assert.rejects(
+    createOrderService(repository).confirm(77, '42'),
+    (error) => error.statusCode === 409 && error.code === 'RESERVATION_EXPIRED',
+  );
+  const state = repository.state();
+  assert.equal(state.order.status, 'expired');
+  assert.equal(state.stocks[10], 5);
+  assert.equal(state.movements.length, 0);
+});
+
+test('orderService rechaza stock insuficiente sin aplicar descuentos parciales', async () => {
+  const repository = createConfirmationRepository({
+    items: [{ variant_id: 10, quantity: 2 }, { variant_id: 20, quantity: 4 }],
+    stocks: { 10: 5, 20: 3 },
+  });
+
+  await assert.rejects(
+    createOrderService(repository).confirm(77, '42'),
+    (error) => error.statusCode === 409 && error.code === 'INSUFFICIENT_STOCK',
+  );
+  assert.deepEqual(repository.state().stocks, { 10: 5, 20: 3 });
+  assert.equal(repository.state().movements.length, 0);
+});
+
+test('orderService confirma varias variantes y agrupa items de la misma variante', async () => {
+  const repository = createConfirmationRepository({
+    items: [
+      { variant_id: 20, quantity: 1 },
+      { variant_id: 10, quantity: 2 },
+      { variant_id: 10, quantity: 3 },
+    ],
+    stocks: { 10: 8, 20: 4 },
+  });
+
+  await createOrderService(repository).confirm(77, '42');
+  const state = repository.state();
+  assert.deepEqual(state.stocks, { 10: 3, 20: 3 });
+  assert.deepEqual(
+    state.movements.map(({ variantId, quantityChange }) => ({ variantId, quantityChange })),
+    [{ variantId: 10, quantityChange: -5 }, { variantId: 20, quantityChange: -1 }],
+  );
+});
+
+test('orderService revierte stock y movimientos si falla una confirmacion intermedia', async () => {
+  const repository = createConfirmationRepository({
+    items: [{ variant_id: 10, quantity: 2 }, { variant_id: 20, quantity: 1 }],
+    stocks: { 10: 5, 20: 4 },
+    failMovementAt: 2,
+  });
+
+  await assert.rejects(
+    createOrderService(repository).confirm(77, '42'),
+    /fallo creando movimiento/,
+  );
+  const state = repository.state();
+  assert.equal(state.order.status, 'reserved');
+  assert.deepEqual(state.stocks, { 10: 5, 20: 4 });
+  assert.equal(state.movements.length, 0);
+});

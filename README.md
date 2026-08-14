@@ -40,6 +40,7 @@ quitá `ADMIN_BOOTSTRAP_PASSWORD` del archivo `.env`.
 - `GET /api/orders` (administrativa, con filtros y paginacion por cursor)
 - `GET /api/orders/:id` (administrativa, incluye items y personalizaciones)
 - `PATCH /api/orders/:id/cancel` (administrativa, cancela una reserva activa)
+- `PATCH /api/orders/:id/confirm` (administrativa, confirma la venta reservada)
 - `POST /api/orders/expire` (administrativa, vence reservas cuyo plazo termino)
 - `GET|POST /api/categories`
 - `GET|PATCH|DELETE /api/categories/:id`
@@ -66,6 +67,10 @@ descuenta recien al confirmar la venta.
 Las cancelaciones y el vencimiento cambian solamente el estado del pedido: no
 modifican el stock fisico ni crean movimientos de inventario. Por ahora el
 vencimiento se ejecuta manualmente mediante el endpoint administrativo.
+
+La confirmacion administrativa obtiene los items guardados, bloquea las
+variantes en orden, descuenta el stock fisico y crea un movimiento
+`confirmed_sale` por variante. Repetir la confirmacion es idempotente.
 
 Ejemplo minimo:
 

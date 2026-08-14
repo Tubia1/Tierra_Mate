@@ -4,6 +4,7 @@ import { requireAdmin } from '../middlewares/authMiddleware.js';
 import { validate } from '../middlewares/validate.js';
 import {
   orderCancelBody,
+  orderConfirmBody,
   orderCreateBody,
   orderIdParams,
   orderListQuery,
@@ -28,6 +29,16 @@ orderController.patch(
   asyncHandler(async (req, res) => {
     const { id } = req.validated.params;
     res.json({ data: await orderService.cancel(id, req.validated.body) });
+  }),
+);
+
+orderController.patch(
+  '/:id/confirm',
+  requireAdmin,
+  validate({ params: orderIdParams, body: orderConfirmBody }),
+  asyncHandler(async (req, res) => {
+    const { id } = req.validated.params;
+    res.json({ data: await orderService.confirm(id, req.admin.id) });
   }),
 );
 
