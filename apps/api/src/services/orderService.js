@@ -110,6 +110,12 @@ function buildWhatsappUrl(number, message) {
 
 export function createOrderService(repository = defaultRepository) {
   return {
+    list: (filters) => repository.list(filters),
+    getById: async (id) => {
+      const order = await repository.findById(id);
+      if (!order) throw new AppError('Pedido no encontrado', 404, 'ORDER_NOT_FOUND');
+      return order;
+    },
     create: async (data) => {
       assertNoDuplicateVariants(data.items);
 

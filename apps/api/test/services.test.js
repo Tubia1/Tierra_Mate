@@ -166,3 +166,45 @@ test('orderService rechaza variantes repetidas', async () => {
     (error) => error.code === 'DUPLICATE_VARIANT',
   );
 });
+
+test('orderService devuelve paginacion y next_cursor del repositorio', async () => {
+  const expected = { items: [{ id: 30 }, { id: 29 }], nextCursor: 29 };
+  const service = createOrderService({
+    list: async (filters) => {
+      assert.deepEqual(filters, { limit: 2, cursor: 31 });
+      return expected;
+    },
+  });
+
+  assert.deepEqual(await service.list({ limit: 2, cursor: 31 }), expected);
+});
+
+test('orderService devuelve ORDER_NOT_FOUND para un pedido inexistente', async () => {
+  const service = createOrderService({ findById: async () => null });
+  await assert.rejects(
+    service.getById(999),
+    (error) => error.statusCode === 404 && error.code === 'ORDER_NOT_FOUND',
+  );
+});
+
+test('orderService devuelve el detalle con items y personalizaciones', async () => {
+  const detail = {
+    id: 77,
+    code: 'TMS-000077',
+    items: [{
+      id: 1,
+      product_name: 'Mate Premium',
+      variant_name: 'Imperial',
+      sku: 'MATE-IMP',
+      unit_price: '1000.00',
+      quantity: 2,
+      line_total: '2300.00',
+      personalizations: [{ option_name: 'Grabado', extra_price: '150.00' }],
+    }],
+  };
+  const service = createOrderService({ findById: async () => detail });
+
+  const result = await service.getById(77);
+  assert.equal(result.items[0].product_name, 'Mate Premium');
+  assert.equal(result.items[0].personalizations[0].option_name, 'Grabado');
+});

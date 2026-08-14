@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import { app } from '../src/app.js';
-import { orderCreateBody } from '../src/schemas/orderSchemas.js';
+import { orderCreateBody, orderListQuery } from '../src/schemas/orderSchemas.js';
 import { productUpdateBody, variantUpdateBody } from '../src/schemas/productSchemas.js';
 
 test('GET / responde con informacion de la API', async () => {
@@ -50,4 +51,46 @@ test('orderCreateBody valida los datos obligatorios del pedido', () => {
     customer: { name: 'Ana', phone: '1122334455', locality: 'Moron' },
     items: [{ variant_id: 1, quantity: 1 }],
   }));
+});
+
+test('el listado de pedidos requiere autenticacion', async () => {
+  const response = await request(app).get('/api/orders').expect(401);
+  assert.equal(response.body.error.code, 'AUTH_REQUIRED');
+});
+
+test('el detalle de pedido requiere autenticacion', async () => {
+  const response = await request(app).get('/api/orders/1').expect(401);
+  assert.equal(response.body.error.code, 'AUTH_REQUIRED');
+});
+
+test('el detalle de pedido valida identificadores invalidos', async () => {
+  const token = jwt.sign(
+    { sub: '1', email: 'admin@example.com' },
+    process.env.JWT_SECRET,
+    { issuer: 'tierra-mate-api', audience: 'tierra-mate-admin' },
+  );
+  const response = await request(app)
+    .get('/api/orders/no-es-un-id')
+    .set('Authorization', `Bearer ${token}`)
+    .expect(400);
+  assert.equal(response.body.error.code, 'VALIDATION_ERROR');
+});
+
+test('el listado rechaza filtros de estado invalidos', async () => {
+  const token = jwt.sign(
+    { sub: '1', email: 'admin@example.com' },
+    process.env.JWT_SECRET,
+    { issuer: 'tierra-mate-api', audience: 'tierra-mate-admin' },
+  );
+  const response = await request(app)
+    .get('/api/orders?status=pending')
+    .set('Authorization', `Bearer ${token}`)
+    .expect(400);
+  assert.equal(response.body.error.code, 'VALIDATION_ERROR');
+});
+
+test('orderListQuery aplica el limite predeterminado y sus limites', () => {
+  assert.deepEqual(orderListQuery.parse({}), { limit: 20 });
+  assert.throws(() => orderListQuery.parse({ limit: 0 }));
+  assert.throws(() => orderListQuery.parse({ limit: 101 }));
 });

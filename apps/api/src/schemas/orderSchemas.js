@@ -2,6 +2,18 @@ import { z } from 'zod';
 import { id } from './commonSchemas.js';
 
 const optionalText = (max) => z.string().trim().min(1).max(max).optional();
+const orderStatus = z.enum([
+  'reserved', 'confirmed', 'preparing', 'completed', 'cancelled', 'expired',
+]);
+
+export const orderIdParams = z.object({ id });
+
+export const orderListQuery = z.object({
+  cursor: id.optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  status: orderStatus.optional(),
+  customer_phone: z.string().trim().min(1).max(80).optional(),
+});
 
 export const orderCreateBody = z.object({
   customer: z.object({

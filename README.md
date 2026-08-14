@@ -37,6 +37,8 @@ quitá `ADMIN_BOOTSTRAP_PASSWORD` del archivo `.env`.
 
 - `POST /api/auth/login`
 - `POST /api/orders`
+- `GET /api/orders` (administrativa, con filtros y paginacion por cursor)
+- `GET /api/orders/:id` (administrativa, incluye items y personalizaciones)
 - `GET|POST /api/categories`
 - `GET|PATCH|DELETE /api/categories/:id`
 - `GET|POST /api/products`
@@ -49,8 +51,8 @@ quitá `ADMIN_BOOTSTRAP_PASSWORD` del archivo `.env`.
 - `POST /api/products/:productId/personalizations`
 - `PATCH|DELETE /api/products/:productId/personalizations/:id`
 
-Las rutas de lectura son publicas. Las escrituras administrativas requieren
-`Authorization: Bearer <token>`.
+Las lecturas del catalogo son publicas. Las escrituras administrativas y las
+consultas de pedidos requieren `Authorization: Bearer <token>`.
 
 ### Pedidos publicos
 

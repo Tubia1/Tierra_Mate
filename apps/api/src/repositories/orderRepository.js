@@ -1,4 +1,81 @@
-import { withTransaction } from '../database/pool.js';
+import { query, withTransaction } from '../database/pool.js';
+
+export async function list({ cursor, limit, status, customer_phone }) {
+  const values = [];
+  const conditions = [];
+  const addCondition = (sql, value) => {
+    values.push(value);
+    conditions.push(sql.replace('?', `$${values.length}`));
+  };
+
+  if (cursor) addCondition('o.id < ?', cursor);
+  if (status) addCondition('o.status = ?', status);
+  if (customer_phone) addCondition('o.customer_phone = ?', customer_phone);
+  values.push(limit + 1);
+
+  const result = await query(
+    `select
+       o.id, o.code, o.customer_name, o.customer_phone, o.customer_locality,
+       o.status, o.subtotal, o.shipping_cost, o.total, o.reserved_until,
+       o.created_at, coalesce(sum(oi.quantity), 0)::integer as total_units
+     from public.orders o
+     left join public.order_items oi on oi.order_id = o.id
+     ${conditions.length ? `where ${conditions.join(' and ')}` : ''}
+     group by o.id
+     order by o.id desc
+     limit $${values.length}`,
+    values,
+  );
+
+  const hasMore = result.rows.length > limit;
+  const items = hasMore ? result.rows.slice(0, limit) : result.rows;
+  return { items, nextCursor: hasMore ? items.at(-1).id : null };
+}
+
+export async function findById(id) {
+  const orderResult = await query('select * from public.orders where id = $1', [id]);
+  const order = orderResult.rows[0];
+  if (!order) return null;
+
+  const itemsResult = await query(
+    `select id, order_id, product_id, variant_id, product_name, variant_name, sku,
+       unit_price, quantity, personalization_total, line_total, created_at
+     from public.order_items
+     where order_id = $1
+     order by id asc`,
+    [id],
+  );
+
+  const itemIds = itemsResult.rows.map((item) => item.id);
+  let personalizations = [];
+  if (itemIds.length > 0) {
+    const personalizationsResult = await query(
+      `select id, order_item_id, option_id, option_name, selected_value,
+         customer_note, extra_price, created_at
+       from public.order_item_personalizations
+       where order_item_id = any($1::bigint[])
+       order by order_item_id asc, id asc`,
+      [itemIds],
+    );
+    personalizations = personalizationsResult.rows;
+  }
+
+  const personalizationsByItem = new Map();
+  for (const personalization of personalizations) {
+    const key = String(personalization.order_item_id);
+    const itemPersonalizations = personalizationsByItem.get(key) ?? [];
+    itemPersonalizations.push(personalization);
+    personalizationsByItem.set(key, itemPersonalizations);
+  }
+
+  return {
+    ...order,
+    items: itemsResult.rows.map((item) => ({
+      ...item,
+      personalizations: personalizationsByItem.get(String(item.id)) ?? [],
+    })),
+  };
+}
 
 export function transaction(callback) {
   return withTransaction(callback);

@@ -12,6 +12,7 @@ Construir una tienda web de mates, bombillas, accesorios y sets. El catálogo es
 - Están implementados autenticación administrativa y CRUD de categorías, productos, variantes, imágenes, personalizaciones y ajustes manuales de stock.
 - Todavia no estan implementados los endpoints de vencimiento, confirmacion de ventas, cancelacion, carga real a Supabase Storage ni el frontend React.
 - No presentar algo como terminado solamente porque su tabla exista.
+- Estan implementadas las consultas administrativas paginadas y de detalle de pedidos.
 
 ## Arquitectura y estructura
 
@@ -19,6 +20,9 @@ Nota de estado: esta implementado `POST /api/orders` para crear pedidos publicos
 con reserva temporal y enlace de WhatsApp. Siguen pendientes los endpoints de
 vencimiento, confirmacion de ventas, cancelacion, carga real a Supabase Storage
 y el frontend React.
+
+Estan implementados `GET /api/orders` y `GET /api/orders/:id` como consultas
+administrativas protegidas con JWT Bearer.
 
 - Mantener un solo repositorio con `apps/api` y, cuando se cree, `apps/web`.
 - Backend: route/controller -> service -> repository -> PostgreSQL.
@@ -65,6 +69,7 @@ y el frontend React.
 - Salud: `GET /api/health`
 - Base de datos: `GET /api/health/database`
 - Crear pedido publico con reserva: `POST /api/orders`
+- Consultar pedidos (administrativo): `GET /api/orders` y `GET /api/orders/:id`
 
 ## Criterio de finalización
 
