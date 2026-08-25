@@ -8,6 +8,7 @@ import {
   orderConfirmBody,
   orderCreateBody,
   orderListQuery,
+  orderStatusUpdateBody,
 } from '../src/schemas/orderSchemas.js';
 import { productUpdateBody, variantUpdateBody } from '../src/schemas/productSchemas.js';
 
@@ -168,6 +169,48 @@ test('la confirmacion no acepta cantidades ni variantes en el body', async () =>
 
 test('el body de confirmacion puede omitirse', () => {
   assert.deepEqual(orderConfirmBody.parse(undefined), {});
+});
+
+test('el seguimiento de estado requiere autenticacion', async () => {
+  const response = await request(app)
+    .patch('/api/orders/1/status')
+    .send({ status: 'preparing' })
+    .expect(401);
+  assert.equal(response.body.error.code, 'AUTH_REQUIRED');
+});
+
+test('el seguimiento de estado valida identificadores invalidos', async () => {
+  const token = jwt.sign(
+    { sub: '1', email: 'admin@example.com' },
+    process.env.JWT_SECRET,
+    { issuer: 'tierra-mate-api', audience: 'tierra-mate-admin' },
+  );
+  const response = await request(app)
+    .patch('/api/orders/no-es-un-id/status')
+    .set('Authorization', `Bearer ${token}`)
+    .send({ status: 'preparing' })
+    .expect(400);
+  assert.equal(response.body.error.code, 'VALIDATION_ERROR');
+});
+
+test('el seguimiento de estado valida el body', async () => {
+  const token = jwt.sign(
+    { sub: '1', email: 'admin@example.com' },
+    process.env.JWT_SECRET,
+    { issuer: 'tierra-mate-api', audience: 'tierra-mate-admin' },
+  );
+  const response = await request(app)
+    .patch('/api/orders/1/status')
+    .set('Authorization', `Bearer ${token}`)
+    .send({ status: 'confirmed' })
+    .expect(400);
+  assert.equal(response.body.error.code, 'VALIDATION_ERROR');
+});
+
+test('orderStatusUpdateBody acepta solo preparing y completed', () => {
+  assert.deepEqual(orderStatusUpdateBody.parse({ status: 'preparing' }), { status: 'preparing' });
+  assert.deepEqual(orderStatusUpdateBody.parse({ status: 'completed' }), { status: 'completed' });
+  assert.throws(() => orderStatusUpdateBody.parse({ status: 'reserved' }));
 });
 
 test('orderListQuery aplica el limite predeterminado y sus limites', () => {

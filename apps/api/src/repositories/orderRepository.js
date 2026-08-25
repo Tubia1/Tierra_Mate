@@ -191,6 +191,18 @@ export async function confirmOrder(client, id) {
   return result.rows[0];
 }
 
+export async function updateOrderStatus(client, id, { fromStatus, toStatus }) {
+  const completedAtSql = toStatus === 'completed' ? ', completed_at = now()' : '';
+  const result = await client.query(
+    `update public.orders
+     set status = $3${completedAtSql}
+     where id = $1 and status = $2
+     returning *`,
+    [id, fromStatus, toStatus],
+  );
+  return result.rows[0] ?? null;
+}
+
 export async function getStoreSettings(client) {
   const result = await client.query(
     `select store_name, whatsapp_number, reservation_minutes, currency

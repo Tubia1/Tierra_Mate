@@ -10,7 +10,7 @@ Construir una tienda web de mates, bombillas, accesorios y sets. El catálogo es
 - `apps/api` contiene una API Node.js + Express 5 con módulos ES.
 - `database/migrations/001_initial_schema.sql` contiene el esquema inicial para PostgreSQL alojado en Supabase.
 - Están implementados autenticación administrativa y CRUD de categorías, productos, variantes, imágenes, personalizaciones y ajustes manuales de stock.
-- Estan implementados la cancelacion administrativa, el vencimiento manual de reservas y la confirmacion administrativa de ventas. Siguen pendientes la carga real a Supabase Storage y el frontend React.
+- Estan implementados la cancelacion administrativa, el vencimiento manual de reservas, la confirmacion administrativa de ventas y el seguimiento administrativo `confirmed -> preparing -> completed`. Siguen pendientes la carga real a Supabase Storage y el frontend React.
 - No presentar algo como terminado solamente porque su tabla exista.
 - Estan implementadas las consultas administrativas paginadas y de detalle de pedidos.
 
@@ -19,7 +19,9 @@ Construir una tienda web de mates, bombillas, accesorios y sets. El catálogo es
 Nota de estado: esta implementado `POST /api/orders` para crear pedidos publicos
 con reserva temporal y enlace de WhatsApp. Tambien estan implementados
 `PATCH /api/orders/:id/cancel`, `POST /api/orders/expire` y
-`PATCH /api/orders/:id/confirm` como operaciones administrativas. Siguen
+`PATCH /api/orders/:id/confirm` como operaciones administrativas. Tambien esta
+implementado `PATCH /api/orders/:id/status` para avanzar pedidos confirmados a
+`preparing` y pedidos en preparacion a `completed`. Siguen
 pendientes la carga real a Supabase Storage y el frontend React.
 
 Estan implementados `GET /api/orders` y `GET /api/orders/:id` como consultas
@@ -73,6 +75,7 @@ administrativas protegidas con JWT Bearer.
 - Consultar pedidos (administrativo): `GET /api/orders` y `GET /api/orders/:id`
 - Cancelar reserva (administrativo): `PATCH /api/orders/:id/cancel`
 - Confirmar venta reservada (administrativo): `PATCH /api/orders/:id/confirm`
+- Avanzar estado de pedido (administrativo): `PATCH /api/orders/:id/status`
 - Vencer reservas terminadas (administrativo): `POST /api/orders/expire`
 
 ## Criterio de finalización

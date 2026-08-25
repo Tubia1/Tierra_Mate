@@ -41,6 +41,7 @@ quitá `ADMIN_BOOTSTRAP_PASSWORD` del archivo `.env`.
 - `GET /api/orders/:id` (administrativa, incluye items y personalizaciones)
 - `PATCH /api/orders/:id/cancel` (administrativa, cancela una reserva activa)
 - `PATCH /api/orders/:id/confirm` (administrativa, confirma la venta reservada)
+- `PATCH /api/orders/:id/status` (administrativa, avanza `confirmed -> preparing -> completed`)
 - `POST /api/orders/expire` (administrativa, vence reservas cuyo plazo termino)
 - `GET|POST /api/categories`
 - `GET|PATCH|DELETE /api/categories/:id`
@@ -71,6 +72,11 @@ vencimiento se ejecuta manualmente mediante el endpoint administrativo.
 La confirmacion administrativa obtiene los items guardados, bloquea las
 variantes en orden, descuenta el stock fisico y crea un movimiento
 `confirmed_sale` por variante. Repetir la confirmacion es idempotente.
+
+El seguimiento administrativo permite avanzar un pedido confirmado a
+`preparing` y luego a `completed`. Estas transiciones no modifican stock fisico,
+no crean movimientos de inventario y preservan `confirmed_at`; al completar se
+guarda `completed_at`.
 
 Ejemplo minimo:
 

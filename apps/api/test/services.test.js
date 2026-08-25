@@ -550,3 +550,180 @@ test('orderService revierte stock y movimientos si falla una confirmacion interm
   assert.deepEqual(state.stocks, { 10: 5, 20: 4 });
   assert.equal(state.movements.length, 0);
 });
+
+function createStatusRepository({
+  order = {
+    id: 77,
+    code: 'TMS-000077',
+    status: 'confirmed',
+    confirmed_at: '2026-08-14T13:00:00.000Z',
+    completed_at: null,
+    items: [],
+  },
+  stocks = { 10: 5 },
+  failAfterStatusChange = false,
+} = {}) {
+  let currentOrder = order ? { ...order } : null;
+  const currentStocks = new Map(Object.entries(stocks).map(([id, stock]) => [Number(id), stock]));
+  const inventoryMovements = [];
+  let statusUpdates = 0;
+
+  const repository = {
+    transaction: async (callback) => {
+      const orderSnapshot = currentOrder ? { ...currentOrder } : null;
+      const stockSnapshot = new Map(currentStocks);
+      const movementCount = inventoryMovements.length;
+      const statusUpdateSnapshot = statusUpdates;
+      try {
+        return await callback({});
+      } catch (error) {
+        currentOrder = orderSnapshot;
+        currentStocks.clear();
+        for (const [id, stock] of stockSnapshot) currentStocks.set(id, stock);
+        inventoryMovements.splice(movementCount);
+        statusUpdates = statusUpdateSnapshot;
+        throw error;
+      }
+    },
+    lockOrder: async () => currentOrder,
+    updateOrderStatus: async (_client, _id, { fromStatus, toStatus }) => {
+      if (!currentOrder || currentOrder.status !== fromStatus) return null;
+      statusUpdates += 1;
+      currentOrder = {
+        ...currentOrder,
+        status: toStatus,
+        completed_at: toStatus === 'completed'
+          ? '2026-08-14T14:00:00.000Z'
+          : currentOrder.completed_at,
+      };
+      if (failAfterStatusChange) throw new Error('fallo actualizando detalle');
+      return currentOrder;
+    },
+    decreaseVariantStock: async (_client, variantId, quantity) => {
+      const stock = currentStocks.get(variantId);
+      currentStocks.set(variantId, stock - quantity);
+      return { id: variantId, stock_quantity: stock - quantity };
+    },
+    createConfirmedSaleMovement: async (_client, movement) => {
+      inventoryMovements.push(movement);
+      return movement;
+    },
+    findById: async () => (currentOrder ? { ...currentOrder, items: currentOrder.items ?? [] } : null),
+    state: () => ({
+      order: currentOrder,
+      stocks: Object.fromEntries(currentStocks),
+      inventoryMovements,
+      statusUpdates,
+    }),
+  };
+  return repository;
+}
+
+test('orderService devuelve ORDER_NOT_FOUND al actualizar estado de un pedido inexistente', async () => {
+  const repository = createStatusRepository({ order: null });
+  await assert.rejects(
+    createOrderService(repository).updateStatus(999, 'preparing'),
+    (error) => error.statusCode === 404 && error.code === 'ORDER_NOT_FOUND',
+  );
+});
+
+test('orderService permite confirmed -> preparing sin tocar inventario ni confirmed_at', async () => {
+  const repository = createStatusRepository();
+  const result = await createOrderService(repository).updateStatus(77, 'preparing');
+  const state = repository.state();
+
+  assert.equal(result.status, 'preparing');
+  assert.equal(result.confirmed_at, '2026-08-14T13:00:00.000Z');
+  assert.equal(result.completed_at, null);
+  assert.deepEqual(state.stocks, { 10: 5 });
+  assert.equal(state.inventoryMovements.length, 0);
+  assert.equal(state.statusUpdates, 1);
+});
+
+test('orderService permite preparing -> completed y guarda completed_at', async () => {
+  const repository = createStatusRepository({
+    order: {
+      id: 77,
+      code: 'TMS-000077',
+      status: 'preparing',
+      confirmed_at: '2026-08-14T13:00:00.000Z',
+      completed_at: null,
+      items: [],
+    },
+  });
+  const result = await createOrderService(repository).updateStatus(77, 'completed');
+
+  assert.equal(result.status, 'completed');
+  assert.equal(result.confirmed_at, '2026-08-14T13:00:00.000Z');
+  assert.equal(result.completed_at, '2026-08-14T14:00:00.000Z');
+  assert.deepEqual(repository.state().stocks, { 10: 5 });
+  assert.equal(repository.state().inventoryMovements.length, 0);
+});
+
+for (const [fromStatus, toStatus] of [
+  ['confirmed', 'completed'],
+  ['reserved', 'preparing'],
+  ['reserved', 'completed'],
+  ['cancelled', 'preparing'],
+  ['cancelled', 'completed'],
+  ['expired', 'preparing'],
+  ['expired', 'completed'],
+  ['completed', 'preparing'],
+]) {
+  test(`orderService rechaza ${fromStatus} -> ${toStatus}`, async () => {
+    const repository = createStatusRepository({
+      order: {
+        id: 77,
+        code: 'TMS-000077',
+        status: fromStatus,
+        confirmed_at: fromStatus === 'reserved' ? null : '2026-08-14T13:00:00.000Z',
+        completed_at: fromStatus === 'completed' ? '2026-08-14T14:00:00.000Z' : null,
+        items: [],
+      },
+    });
+
+    await assert.rejects(
+      createOrderService(repository).updateStatus(77, toStatus),
+      (error) => error.statusCode === 409 && error.code === 'INVALID_ORDER_TRANSITION',
+    );
+    assert.equal(repository.state().statusUpdates, 0);
+    assert.deepEqual(repository.state().stocks, { 10: 5 });
+    assert.equal(repository.state().inventoryMovements.length, 0);
+  });
+}
+
+test('orderService hace idempotente repetir el mismo estado', async () => {
+  const repository = createStatusRepository({
+    order: {
+      id: 77,
+      code: 'TMS-000077',
+      status: 'preparing',
+      confirmed_at: '2026-08-14T13:00:00.000Z',
+      completed_at: null,
+      items: [],
+    },
+  });
+
+  const result = await createOrderService(repository).updateStatus(77, 'preparing');
+
+  assert.equal(result.status, 'preparing');
+  assert.equal(repository.state().statusUpdates, 0);
+  assert.deepEqual(repository.state().stocks, { 10: 5 });
+  assert.equal(repository.state().inventoryMovements.length, 0);
+});
+
+test('orderService no deja cambios parciales si falla una actualizacion de estado', async () => {
+  const repository = createStatusRepository({ failAfterStatusChange: true });
+
+  await assert.rejects(
+    createOrderService(repository).updateStatus(77, 'preparing'),
+    /fallo actualizando detalle/,
+  );
+
+  const state = repository.state();
+  assert.equal(state.order.status, 'confirmed');
+  assert.equal(state.order.completed_at, null);
+  assert.equal(state.statusUpdates, 0);
+  assert.deepEqual(state.stocks, { 10: 5 });
+  assert.equal(state.inventoryMovements.length, 0);
+});

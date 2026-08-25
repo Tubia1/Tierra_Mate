@@ -14,6 +14,10 @@ export const orderCancelBody = z.object({
 
 export const orderConfirmBody = z.object({}).strict().default({});
 
+export const orderStatusUpdateBody = z.object({
+  status: z.enum(['preparing', 'completed']),
+}).strict();
+
 export const orderListQuery = z.object({
   cursor: id.optional(),
   limit: z.coerce.number().int().min(1).max(100).default(20),

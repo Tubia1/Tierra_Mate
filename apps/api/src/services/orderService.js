@@ -119,6 +119,11 @@ function buildWhatsappUrl(number, message) {
   return `https://wa.me/${normalizedNumber}?text=${encodeURIComponent(message)}`;
 }
 
+function canTransitionOrder(currentStatus, nextStatus) {
+  return (currentStatus === 'confirmed' && nextStatus === 'preparing')
+    || (currentStatus === 'preparing' && nextStatus === 'completed');
+}
+
 export function createOrderService(repository = defaultRepository) {
   return {
     list: (filters) => repository.list(filters),
@@ -223,6 +228,40 @@ export function createOrderService(repository = defaultRepository) {
       const confirmedOrder = await repository.findById(id);
       if (!confirmedOrder) throw new AppError('Pedido no encontrado', 404, 'ORDER_NOT_FOUND');
       return confirmedOrder;
+    },
+    updateStatus: async (id, nextStatus) => {
+      await repository.transaction(async (client) => {
+        const order = await repository.lockOrder(client, id);
+        if (!order) throw new AppError('Pedido no encontrado', 404, 'ORDER_NOT_FOUND');
+
+        if (order.status === nextStatus) return;
+
+        if (!canTransitionOrder(order.status, nextStatus)) {
+          throw new AppError(
+            `No se puede cambiar un pedido de ${order.status} a ${nextStatus}`,
+            409,
+            'INVALID_ORDER_TRANSITION',
+          );
+        }
+
+        const updatedOrder = await repository.updateOrderStatus(client, id, {
+          fromStatus: order.status,
+          toStatus: nextStatus,
+        });
+
+        if (!updatedOrder) {
+          throw new AppError(
+            `No se puede cambiar un pedido de ${order.status} a ${nextStatus}`,
+            409,
+            'INVALID_ORDER_TRANSITION',
+          );
+        }
+
+      });
+
+      const updatedOrder = await repository.findById(id);
+      if (!updatedOrder) throw new AppError('Pedido no encontrado', 404, 'ORDER_NOT_FOUND');
+      return updatedOrder;
     },
     getById: async (id) => {
       const order = await repository.findById(id);

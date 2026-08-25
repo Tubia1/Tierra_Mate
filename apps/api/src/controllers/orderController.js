@@ -8,6 +8,7 @@ import {
   orderCreateBody,
   orderIdParams,
   orderListQuery,
+  orderStatusUpdateBody,
 } from '../schemas/orderSchemas.js';
 import { orderService } from '../services/orderService.js';
 
@@ -29,6 +30,16 @@ orderController.patch(
   asyncHandler(async (req, res) => {
     const { id } = req.validated.params;
     res.json({ data: await orderService.cancel(id, req.validated.body) });
+  }),
+);
+
+orderController.patch(
+  '/:id/status',
+  requireAdmin,
+  validate({ params: orderIdParams, body: orderStatusUpdateBody }),
+  asyncHandler(async (req, res) => {
+    const { id } = req.validated.params;
+    res.json({ data: await orderService.updateStatus(id, req.validated.body.status) });
   }),
 );
 
