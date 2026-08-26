@@ -40,6 +40,133 @@ test('productService no permite modificar un producto inexistente', async () => 
   );
 });
 
+function createImageStorageMock() {
+  const calls = { uploads: [], removals: [] };
+  return {
+    calls,
+    upload: async (...args) => { calls.uploads.push(args); },
+    remove: async (path) => { calls.removals.push(path); },
+    publicUrl: (path) => (path ? `https://example.supabase.co/storage/v1/object/public/product-images/${path}` : null),
+  };
+}
+
+test('productService devuelve PRODUCT_NOT_FOUND antes de subir una imagen', async () => {
+  const storage = createImageStorageMock();
+  const service = createProductService({ findById: async () => null }, storage);
+  await assert.rejects(
+    service.uploadImage(99, { is_primary: false, display_order: 0 }, {
+      mimetype: 'image/webp', buffer: Buffer.from('image'),
+    }),
+    (error) => error.code === 'PRODUCT_NOT_FOUND',
+  );
+  assert.equal(storage.calls.uploads.length, 0);
+});
+
+test('productService sube una ruta única, registra PostgreSQL y devuelve public_url', async () => {
+  const storage = createImageStorageMock();
+  const created = [];
+  const repository = {
+    findById: async () => ({ id: '2', images: [] }),
+    createImage: async (productId, data) => {
+      created.push({ productId, data });
+      return { id: '1', product_id: String(productId), ...data };
+    },
+  };
+  const service = createProductService(repository, storage);
+  const input = { alt_text: 'Mate imperial negro', is_primary: true, display_order: 1 };
+  const file = { mimetype: 'image/webp', buffer: Buffer.from('webp') };
+
+  const first = await service.uploadImage(2, input, file);
+  const second = await service.uploadImage(2, input, file);
+
+  assert.match(first.storage_path, /^products\/2\/[0-9a-f-]{36}\.webp$/);
+  assert.match(second.storage_path, /^products\/2\/[0-9a-f-]{36}\.webp$/);
+  assert.notEqual(first.storage_path, second.storage_path);
+  assert.equal(storage.calls.uploads[0][1], file.buffer);
+  assert.equal(storage.calls.uploads[0][2], 'image/webp');
+  assert.deepEqual(created[0], {
+    productId: 2,
+    data: { ...input, storage_path: first.storage_path },
+  });
+  assert.equal(first.public_url, `https://example.supabase.co/storage/v1/object/public/product-images/${first.storage_path}`);
+});
+
+test('productService conserva una sola imagen principal mediante el repositorio', async () => {
+  const storage = createImageStorageMock();
+  const images = [
+    { id: '1', product_id: '2', storage_path: 'products/2/old.jpg', is_primary: true, display_order: 0 },
+  ];
+  const repository = {
+    findById: async () => ({ id: '2', images }),
+    createImage: async (productId, data) => {
+      if (data.is_primary) images.forEach((image) => { image.is_primary = false; });
+      const image = { id: String(images.length + 1), product_id: String(productId), ...data };
+      images.push(image);
+      return image;
+    },
+  };
+
+  await createProductService(repository, storage).uploadImage(2, {
+    is_primary: true, display_order: 1,
+  }, { mimetype: 'image/jpeg', buffer: Buffer.from([0xff, 0xd8, 0xff]) });
+
+  assert.equal(images.filter((image) => image.is_primary).length, 1);
+  assert.equal(images.at(-1).is_primary, true);
+});
+
+test('productService intenta limpiar Storage si falla PostgreSQL', async () => {
+  const storage = createImageStorageMock();
+  const service = createProductService({
+    findById: async () => ({ id: '2', images: [] }),
+    createImage: async () => { throw new Error('database failed'); },
+  }, storage);
+
+  await assert.rejects(
+    service.uploadImage(2, { is_primary: false, display_order: 0 }, {
+      mimetype: 'image/png', buffer: Buffer.from('png'),
+    }),
+    /database failed/,
+  );
+  assert.equal(storage.calls.removals.length, 1);
+  assert.equal(storage.calls.removals[0], storage.calls.uploads[0][0]);
+});
+
+test('productService elimina Storage usando la ruta registrada y después PostgreSQL', async () => {
+  const order = [];
+  const storage = createImageStorageMock();
+  storage.remove = async (path) => { order.push(`storage:${path}`); };
+  const repository = {
+    findById: async () => ({ id: '2', images: [] }),
+    findImage: async () => ({ id: '8', product_id: '2', storage_path: 'products/2/safe.webp' }),
+    deleteImage: async () => {
+      order.push('postgres');
+      return { id: '8', product_id: '2', storage_path: 'products/2/safe.webp' };
+    },
+  };
+
+  const result = await createProductService(repository, storage).removeImage(2, 8);
+  assert.deepEqual(order, ['storage:products/2/safe.webp', 'postgres']);
+  assert.equal(result.public_url.endsWith('/products/2/safe.webp'), true);
+});
+
+test('productService agrega URLs públicas sin quitar rutas existentes', async () => {
+  const storage = createImageStorageMock();
+  const repository = {
+    list: async () => ({ items: [{ id: '2', primary_image: 'products/2/main.jpg' }], nextCursor: null }),
+    findById: async () => ({
+      id: '2', images: [{ id: '8', storage_path: 'products/2/main.jpg' }],
+    }),
+  };
+  const service = createProductService(repository, storage);
+  const listed = await service.list({ limit: 20 });
+  const detail = await service.getById(2);
+
+  assert.equal(listed.items[0].primary_image, 'products/2/main.jpg');
+  assert.equal(listed.items[0].primary_image_url.endsWith('/products/2/main.jpg'), true);
+  assert.equal(detail.images[0].storage_path, 'products/2/main.jpg');
+  assert.equal(detail.images[0].public_url.endsWith('/products/2/main.jpg'), true);
+});
+
 function createOrderRequest(overrides = {}) {
   return {
     customer: {

@@ -7,7 +7,11 @@
   ],
   "scripts": {
     "dev:api": "npm run dev --workspace @tierra-mate/api",
+    "dev:web": "npm run dev --workspace @tierra-mate/web",
+    "build:web": "npm run build --workspace @tierra-mate/web",
+    "test:web": "npm run test --workspace @tierra-mate/web",
     "start:api": "npm run start --workspace @tierra-mate/api",
+    "admin:reset-password": "npm run admin:reset-password --workspace @tierra-mate/api",
     "test": "npm run test --workspace @tierra-mate/api"
   },
   "dependencies": {

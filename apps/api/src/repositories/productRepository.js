@@ -251,6 +251,14 @@ export async function deleteImage(productId, id) {
   return result.rows[0] ?? null;
 }
 
+export async function findImage(productId, id) {
+  const result = await query(
+    'select * from public.product_images where product_id = $1 and id = $2',
+    [productId, id],
+  );
+  return result.rows[0] ?? null;
+}
+
 export async function createPersonalization(productId, data) {
   const result = await query(
     `insert into public.personalization_options

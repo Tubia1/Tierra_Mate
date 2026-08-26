@@ -2,9 +2,10 @@ import { Router } from 'express';
 import { asyncHandler } from '../helpers/asyncHandler.js';
 import { requireAdmin } from '../middlewares/authMiddleware.js';
 import { validate } from '../middlewares/validate.js';
+import { imageUpload } from '../middlewares/imageUpload.js';
 import { idParams, nestedIdParams, productIdParams } from '../schemas/commonSchemas.js';
 import {
-  imageCreateBody, imageUpdateBody, personalizationCreateBody, personalizationUpdateBody,
+  imageCreateBody, imageUpdateBody, imageUploadBody, personalizationCreateBody, personalizationUpdateBody,
   productCreateBody, productListQuery, productUpdateBody, stockAdjustmentBody,
   variantCreateBody, variantUpdateBody,
 } from '../schemas/productSchemas.js';
@@ -32,6 +33,18 @@ productController.patch('/:id', requireAdmin, validate({ params: idParams, body:
 productController.delete('/:id', requireAdmin, validate({ params: idParams }), asyncHandler(async (req, res) => {
   res.json({ data: await productService.remove(req.validated.params.id) });
 }));
+
+productController.post('/:productId/images/upload', requireAdmin, imageUpload,
+  validate({ params: productIdParams, body: imageUploadBody }),
+  asyncHandler(async (req, res) => {
+    res.status(201).json({
+      data: await productService.uploadImage(
+        req.validated.params.productId,
+        req.validated.body,
+        req.file,
+      ),
+    });
+  }));
 
 productController.patch('/:productId/variants/:id/stock', requireAdmin,
   validate({ params: nestedIdParams, body: stockAdjustmentBody }),

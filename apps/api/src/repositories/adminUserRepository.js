@@ -24,3 +24,14 @@ export async function create({ name, email, passwordHash }) {
   );
   return result.rows[0];
 }
+
+export async function updatePasswordByEmail(email, passwordHash) {
+  const result = await query(
+    `update public.admin_users
+     set password_hash = $2
+     where lower(email) = lower($1)
+     returning id, name, email, active, updated_at`,
+    [email, passwordHash],
+  );
+  return result.rows[0] ?? null;
+}

@@ -7,6 +7,7 @@ Monorepo de la tienda Tierra Mate Shop.
 ```text
 apps/
   api/        API Node.js + Express
+  web/        Tienda publica React + Vite
 database/
   migrations/ Migraciones PostgreSQL/Supabase
 ```
@@ -21,6 +22,43 @@ npm run dev:api
 
 La API usa la estructura `controller -> service -> repository -> PostgreSQL`.
 
+## Frontend publico
+
+La primera version visual incluye inicio, catalogo con filtro por categoria y
+paginacion, detalle interactivo de producto y pagina 404. Consume solamente las
+lecturas publicas de la API; no se conecta directamente a PostgreSQL ni utiliza
+claves secretas de Supabase.
+
+```bash
+cp apps/web/.env.example apps/web/.env
+npm run dev:web
+```
+
+Variable del frontend:
+
+```env
+VITE_API_URL=http://localhost:3000/api
+```
+
+Para trabajar localmente, ejecutar en terminales separadas:
+
+```bash
+npm run dev:api
+npm run dev:web
+```
+
+Verificacion del frontend:
+
+```bash
+npm run test:web
+npm run build:web
+```
+
+El frontend incluye un panel administrador en `/admin`: login, rutas protegidas,
+gestion de categorias y productos, variantes, precios, ajustes de stock, imagenes
+y personalizaciones. La gestion visual de pedidos se incorporara en una siguiente
+etapa. El carrito y la creacion de pedidos desde la interfaz publica continuan pendientes.
+
 ### Crear el primer administrador
 
 Completá en `apps/api/.env` las variables `ADMIN_BOOTSTRAP_NAME`,
@@ -32,6 +70,24 @@ npm run admin:create --workspace @tierra-mate/api
 
 La contraseña se guarda únicamente como hash bcrypt. Después de crear la cuenta,
 quitá `ADMIN_BOOTSTRAP_PASSWORD` del archivo `.env`.
+
+### Restablecer la contraseña de un administrador
+
+Si la cuenta ya existe, completá temporalmente estas variables en `apps/api/.env`:
+
+```env
+ADMIN_RESET_EMAIL=admin@ejemplo.com
+ADMIN_RESET_PASSWORD=una-contraseña-nueva-y-segura
+```
+
+Ejecutá desde la raíz:
+
+```bash
+npm run admin:reset-password
+```
+
+Después eliminá `ADMIN_RESET_PASSWORD` del archivo `.env`. La contraseña nunca
+se guarda en texto plano en PostgreSQL ni se imprime durante el proceso.
 
 ### Rutas principales
 

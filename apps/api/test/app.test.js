@@ -38,6 +38,52 @@ test('las escrituras requieren autenticación', async () => {
   assert.equal(response.body.error.code, 'AUTH_REQUIRED');
 });
 
+test('la carga de imágenes requiere autenticación', async () => {
+  const response = await request(app)
+    .post('/api/products/1/images/upload')
+    .attach('image', Buffer.from('image'), { filename: 'mate.webp', contentType: 'image/webp' })
+    .expect(401);
+  assert.equal(response.body.error.code, 'AUTH_REQUIRED');
+});
+
+test('la carga rechaza peticiones sin archivo', async () => {
+  const token = jwt.sign({ sub: '1', email: 'admin@example.com' }, process.env.JWT_SECRET, {
+    issuer: 'tierra-mate-api', audience: 'tierra-mate-admin',
+  });
+  const response = await request(app)
+    .post('/api/products/1/images/upload')
+    .set('Authorization', `Bearer ${token}`)
+    .field('alt_text', 'Mate negro')
+    .expect(400);
+  assert.equal(response.body.error.code, 'IMAGE_REQUIRED');
+});
+
+test('la carga rechaza tipos de archivo inválidos', async () => {
+  const token = jwt.sign({ sub: '1', email: 'admin@example.com' }, process.env.JWT_SECRET, {
+    issuer: 'tierra-mate-api', audience: 'tierra-mate-admin',
+  });
+  const response = await request(app)
+    .post('/api/products/1/images/upload')
+    .set('Authorization', `Bearer ${token}`)
+    .attach('image', Buffer.from('not-an-image'), { filename: 'payload.txt', contentType: 'text/plain' })
+    .expect(400);
+  assert.equal(response.body.error.code, 'INVALID_IMAGE_TYPE');
+});
+
+test('la carga rechaza imágenes mayores a 5 MB', async () => {
+  const token = jwt.sign({ sub: '1', email: 'admin@example.com' }, process.env.JWT_SECRET, {
+    issuer: 'tierra-mate-api', audience: 'tierra-mate-admin',
+  });
+  const response = await request(app)
+    .post('/api/products/1/images/upload')
+    .set('Authorization', `Bearer ${token}`)
+    .attach('image', Buffer.alloc((5 * 1024 * 1024) + 1), {
+      filename: 'grande.jpg', contentType: 'image/jpeg',
+    })
+    .expect(413);
+  assert.equal(response.body.error.code, 'IMAGE_TOO_LARGE');
+});
+
 test('se validan los identificadores', async () => {
   const response = await request(app).get('/api/products/no-es-un-id').expect(400);
   assert.equal(response.body.error.code, 'VALIDATION_ERROR');

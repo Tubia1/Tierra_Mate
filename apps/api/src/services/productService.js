@@ -1,12 +1,21 @@
 import { AppError } from '../helpers/AppError.js';
 import { slugify } from '../helpers/slugify.js';
 import * as defaultRepository from '../repositories/productRepository.js';
+import { randomUUID } from 'node:crypto';
+import { storageService as defaultStorageService } from './storageService.js';
 
-export function createProductService(repository = defaultRepository) {
+const extensions = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+
+export function createProductService(repository = defaultRepository, storage = defaultStorageService) {
+  const withImageUrl = (image) => image && ({ ...image, public_url: storage.publicUrl(image.storage_path) });
+  const withProductUrls = (product) => product && ({
+    ...product,
+    ...(product.images ? { images: product.images.map(withImageUrl) } : {}),
+  });
   const getById = async (id) => {
     const product = await repository.findById(id);
     if (!product) throw new AppError('Producto no encontrado', 404, 'PRODUCT_NOT_FOUND');
-    return product;
+    return withProductUrls(product);
   };
 
   const assertCategory = async (categoryId) => {
@@ -22,7 +31,16 @@ export function createProductService(repository = defaultRepository) {
   };
 
   return {
-    list: (filters) => repository.list(filters),
+    list: async (filters) => {
+      const result = await repository.list(filters);
+      return {
+        ...result,
+        items: result.items.map((item) => ({
+          ...item,
+          primary_image_url: storage.publicUrl(item.primary_image),
+        })),
+      };
+    },
     getById,
     create: async (data) => {
       await assertCategory(data.category_id);
@@ -59,7 +77,22 @@ export function createProductService(repository = defaultRepository) {
     },
     createImage: async (productId, data) => {
       await assertProduct(productId);
-      return repository.createImage(productId, data);
+      return withImageUrl(await repository.createImage(productId, data));
+    },
+    uploadImage: async (productId, data, file) => {
+      await assertProduct(productId);
+      if (!file) throw new AppError('Debe enviarse una imagen', 400, 'IMAGE_REQUIRED');
+      const extension = extensions[file.mimetype];
+      if (!extension) throw new AppError('El archivo debe ser JPEG, PNG o WebP', 400, 'INVALID_IMAGE_TYPE');
+      const storagePath = `products/${productId}/${randomUUID()}.${extension}`;
+      await storage.upload(storagePath, file.buffer, file.mimetype);
+      try {
+        const image = await repository.createImage(productId, { ...data, storage_path: storagePath });
+        return withImageUrl(image);
+      } catch (error) {
+        try { await storage.remove(storagePath); } catch { /* preserve the PostgreSQL error */ }
+        throw error;
+      }
     },
     updateImage: async (productId, id, data) => {
       await assertProduct(productId);
@@ -67,7 +100,9 @@ export function createProductService(repository = defaultRepository) {
     },
     removeImage: async (productId, id) => {
       await assertProduct(productId);
-      return ensureResult(await repository.deleteImage(productId, id), 'Imagen');
+      const image = ensureResult(await repository.findImage(productId, id), 'Imagen');
+      await storage.remove(image.storage_path);
+      return withImageUrl(ensureResult(await repository.deleteImage(productId, id), 'Imagen'));
     },
     createPersonalization: async (productId, data) => {
       await assertProduct(productId);

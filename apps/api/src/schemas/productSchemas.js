@@ -82,6 +82,13 @@ export const imageUpdateBody = imageBase.partial().refine(
   'Debe enviarse al menos un campo',
 );
 
+const multipartBoolean = z.enum(['true', 'false']).transform((value) => value === 'true');
+export const imageUploadBody = z.object({
+  alt_text: z.string().trim().max(300).nullable().optional(),
+  is_primary: multipartBoolean.default(false),
+  display_order: z.coerce.number().int().min(0).default(0),
+}).strict();
+
 const personalizationBase = z.object({
   name: z.string().trim().min(1).max(150),
   input_type: z.enum(['select', 'text', 'boolean']),

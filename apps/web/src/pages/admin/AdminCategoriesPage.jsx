@@ -1,0 +1,17 @@
+import { useEffect, useState } from 'react';
+import { useAuth } from '../../admin/AuthContext.jsx';
+import { adminApi } from '../../services/api.js';
+
+const empty = { name: '', display_order: 0, active: true };
+export function AdminCategoriesPage() {
+  const { session, logout } = useAuth();
+  const [items, setItems] = useState([]); const [form, setForm] = useState(empty); const [editing, setEditing] = useState(null); const [error, setError] = useState(''); const [busy, setBusy] = useState(false);
+  async function load() { try { const result = await adminApi.getCategories({ limit: 100 }); setItems(result.data); } catch (err) { setError(err.message); } }
+  useEffect(() => { load(); }, []);
+  function change(event) { const { name, value, type, checked } = event.target; setForm((current) => ({ ...current, [name]: type === 'checkbox' ? checked : value })); }
+  function edit(item) { setEditing(item.id); setForm({ name: item.name, display_order: item.display_order, active: item.active }); }
+  function reset() { setEditing(null); setForm(empty); setError(''); }
+  async function submit(event) { event.preventDefault(); setBusy(true); setError(''); try { if (editing) await adminApi.updateCategory(editing, form, session.token); else await adminApi.createCategory(form, session.token); reset(); await load(); } catch (err) { setError(err.message); if (err.status === 401) logout(); } finally { setBusy(false); } }
+  async function deactivate(id) { if (!window.confirm('¿Desactivar esta categoría?')) return; try { await adminApi.deactivateCategory(id, session.token); await load(); } catch (err) { setError(err.message); } }
+  return <><header className="admin-heading"><div><p className="eyebrow">Catálogo</p><h1>Categorías</h1><p>Las categorías activas aparecen como filtros en la tienda.</p></div></header><div className="admin-grid"><section className="admin-panel"><h2>{editing ? 'Editar categoría' : 'Nueva categoría'}</h2><form className="admin-form" onSubmit={submit}>{error && <p className="form-error" role="alert">{error}</p>}<label>Nombre<input name="name" value={form.name} onChange={change} required maxLength="100" /></label><label>Orden<input name="display_order" type="number" min="0" value={form.display_order} onChange={change} required /></label><label className="check-field"><input name="active" type="checkbox" checked={form.active} onChange={change} /> Categoría activa</label><div className="form-actions"><button className="button button--primary" disabled={busy}>{busy ? 'Guardando…' : 'Guardar'}</button>{editing && <button className="button button--outline" type="button" onClick={reset}>Cancelar</button>}</div></form></section><section className="admin-panel admin-panel--wide"><div className="panel-title"><h2>Categorías</h2><span>{items.length} registros</span></div><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Nombre</th><th>Orden</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>{items.map((item) => <tr key={item.id}><td><strong>{item.name}</strong><small>{item.slug}</small></td><td>{item.display_order}</td><td><span className={`status ${item.active ? 'status--active' : ''}`}>{item.active ? 'Activa' : 'Inactiva'}</span></td><td><button onClick={() => edit(item)}>Editar</button>{item.active && <button onClick={() => deactivate(item.id)}>Desactivar</button>}</td></tr>)}</tbody></table></div></section></div></>;
+}

@@ -15,6 +15,9 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(32),
   JWT_EXPIRES_IN: z.string().default('8h'),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
+  SUPABASE_URL: z.string().url(),
+  SUPABASE_SECRET_KEY: z.string().min(1),
+  SUPABASE_STORAGE_BUCKET: z.string().trim().min(1).default('product-images'),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -35,4 +38,7 @@ export const env = {
   jwtSecret: parsed.data.JWT_SECRET,
   jwtExpiresIn: parsed.data.JWT_EXPIRES_IN,
   corsOrigins: parsed.data.CORS_ORIGIN.split(',').map((origin) => origin.trim()),
+  supabaseUrl: parsed.data.SUPABASE_URL,
+  supabaseSecretKey: parsed.data.SUPABASE_SECRET_KEY,
+  supabaseStorageBucket: parsed.data.SUPABASE_STORAGE_BUCKET,
 };
