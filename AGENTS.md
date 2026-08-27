@@ -10,7 +10,7 @@ Construir una tienda web de mates, bombillas, accesorios y sets. El catálogo es
 - `apps/api` contiene una API Node.js + Express 5 con módulos ES.
 - `database/migrations/001_initial_schema.sql` contiene el esquema inicial para PostgreSQL alojado en Supabase.
 - Están implementados autenticación administrativa y CRUD de categorías, productos, variantes, imágenes, personalizaciones y ajustes manuales de stock.
-- Estan implementados la carga real a Supabase Storage, la cancelacion administrativa, el vencimiento manual de reservas, la confirmacion administrativa de ventas y el seguimiento administrativo `confirmed -> preparing -> completed`.
+- Estan implementados la carga real a Supabase Storage, la cancelacion administrativa, el vencimiento automatico cada minuto mediante Supabase Cron (con vencimiento manual como respaldo), la confirmacion administrativa de ventas y el seguimiento administrativo `confirmed -> preparing -> completed`.
 - `apps/web` contiene la primera version visual publica en React: inicio, catalogo, filtros y detalle interactivo. Tambien contiene `/admin`: login, rutas protegidas y gestion de categorias, productos, variantes, precios, stock, imagenes y personalizaciones. Siguen pendientes el carrito, la compra por WhatsApp y el modulo administrativo de pedidos.
 - No presentar algo como terminado solamente porque su tabla exista.
 - Estan implementadas las consultas administrativas paginadas y de detalle de pedidos.
@@ -85,6 +85,7 @@ administrativas protegidas con JWT Bearer.
 - Confirmar venta reservada (administrativo): `PATCH /api/orders/:id/confirm`
 - Avanzar estado de pedido (administrativo): `PATCH /api/orders/:id/status`
 - Vencer reservas terminadas (administrativo): `POST /api/orders/expire`
+- Automatizar vencimientos: `database/migrations/002_schedule_order_expiration.sql`
 
 ## Criterio de finalización
 

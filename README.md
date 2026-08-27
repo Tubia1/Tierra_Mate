@@ -122,8 +122,10 @@ de WhatsApp. La reserva no modifica `stock_quantity`; el stock fisico se
 descuenta recien al confirmar la venta.
 
 Las cancelaciones y el vencimiento cambian solamente el estado del pedido: no
-modifican el stock fisico ni crean movimientos de inventario. Por ahora el
-vencimiento se ejecuta manualmente mediante el endpoint administrativo.
+modifican el stock fisico ni crean movimientos de inventario. La migracion
+`002_schedule_order_expiration.sql` programa el vencimiento automatico cada
+minuto mediante Supabase Cron; el endpoint administrativo queda disponible
+como respaldo manual.
 
 La confirmacion administrativa obtiene los items guardados, bloquea las
 variantes en orden, descuenta el stock fisico y crea un movimiento
