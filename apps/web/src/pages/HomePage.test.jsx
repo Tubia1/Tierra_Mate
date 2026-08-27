@@ -13,6 +13,7 @@ describe('HomePage', () => {
       : jsonResponse([product], { next_cursor: null }));
     renderHome();
     expect(screen.getByRole('heading', { name: /tradición del mate/i })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Logotipo ilustrado de Tierra Mate' }).getAttribute('src')).toContain('tierra-mate-home-transparent.png');
     expect(await screen.findByRole('heading', { name: product.name })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: category.name })).toBeInTheDocument();
   });

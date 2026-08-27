@@ -1,6 +1,6 @@
 import { query, withTransaction } from '../database/pool.js';
 
-export async function list({ cursor, limit, status, customer_phone }) {
+export async function list({ cursor, limit, status, customer_phone, date_from, date_to }) {
   const values = [];
   const conditions = [];
   const addCondition = (sql, value) => {
@@ -11,6 +11,8 @@ export async function list({ cursor, limit, status, customer_phone }) {
   if (cursor) addCondition('o.id < ?', cursor);
   if (status) addCondition('o.status = ?', status);
   if (customer_phone) addCondition('o.customer_phone = ?', customer_phone);
+  if (date_from) addCondition('o.created_at >= ?::date', date_from);
+  if (date_to) addCondition("o.created_at < (?::date + interval '1 day')", date_to);
   values.push(limit + 1);
 
   const result = await query(

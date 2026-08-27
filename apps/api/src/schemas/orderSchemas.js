@@ -23,7 +23,12 @@ export const orderListQuery = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
   status: orderStatus.optional(),
   customer_phone: z.string().trim().min(1).max(80).optional(),
-});
+  date_from: z.string().date().optional(),
+  date_to: z.string().date().optional(),
+}).refine(
+  ({ date_from, date_to }) => !date_from || !date_to || date_from <= date_to,
+  { path: ['date_to'], message: 'La fecha final debe ser igual o posterior a la inicial' },
+);
 
 export const orderCreateBody = z.object({
   customer: z.object({

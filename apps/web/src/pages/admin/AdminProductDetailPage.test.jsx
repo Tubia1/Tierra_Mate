@@ -35,4 +35,29 @@ describe('AdminProductDetailPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Guardar variante' }));
     await waitFor(() => expect(sessionStorage.getItem('tierra-mate-admin-session')).toBeNull());
   });
+
+  it('refresca el producto sin informar error después de subir una imagen', async () => {
+    sessionStorage.setItem('tierra-mate-admin-session', JSON.stringify({ token: 'jwt', admin: { id: '1', name: 'Admin', email: 'admin@test.com' } }));
+    const productWithImage = {
+      ...product,
+      images: [{ id: '9', public_url: 'https://images.example/mate.webp', alt_text: 'Mate imperial', is_primary: true, display_order: 0 }],
+    };
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: product }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: productWithImage.images[0] }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: productWithImage }) });
+
+    render(<AuthProvider><MemoryRouter initialEntries={['/admin/productos/2']}><Routes><Route path="/admin/productos/:id" element={<AdminProductDetailPage />} /></Routes></MemoryRouter></AuthProvider>);
+    await screen.findByRole('heading', { name: 'Mate Imperial' });
+
+    const imageInput = screen.getByLabelText(/Archivo JPEG/);
+    fireEvent.change(imageInput, {
+      target: { files: [new File(['RIFFxxxxWEBP'], 'mate.webp', { type: 'image/webp' })] },
+    });
+    fireEvent.submit(imageInput.closest('form'));
+
+    expect(await screen.findByText('1 imágenes')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(globalThis.fetch).toHaveBeenCalledTimes(3);
+  });
 });

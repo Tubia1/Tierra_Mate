@@ -13,7 +13,7 @@ export function ProductCard({ product }) {
       <div className="product-card__body">
         <div className="product-card__meta">
           <span>{product.category_name}</span>
-          <StockBadge stock={product.physical_stock} />
+          <StockBadge stock={product.available_stock ?? product.physical_stock} />
         </div>
         <h3><Link to={`/productos/${product.id}`}>{product.name}</Link></h3>
         <div className="product-card__footer">

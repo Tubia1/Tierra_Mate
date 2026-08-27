@@ -264,3 +264,13 @@ test('orderListQuery aplica el limite predeterminado y sus limites', () => {
   assert.throws(() => orderListQuery.parse({ limit: 0 }));
   assert.throws(() => orderListQuery.parse({ limit: 101 }));
 });
+
+test('orderListQuery valida el rango de fechas administrativas', () => {
+  assert.deepEqual(orderListQuery.parse({ date_from: '2026-08-01', date_to: '2026-08-26' }), {
+    limit: 20,
+    date_from: '2026-08-01',
+    date_to: '2026-08-26',
+  });
+  assert.throws(() => orderListQuery.parse({ date_from: '26-08-2026' }));
+  assert.throws(() => orderListQuery.parse({ date_from: '2026-08-27', date_to: '2026-08-26' }));
+});

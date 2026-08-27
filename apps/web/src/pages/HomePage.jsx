@@ -3,16 +3,14 @@ import { EmptyState } from '../components/EmptyState.jsx';
 import { ErrorState } from '../components/ErrorState.jsx';
 import { LoadingSkeleton } from '../components/LoadingSkeleton.jsx';
 import { ProductCard } from '../components/ProductCard.jsx';
-import { ProductImage } from '../components/ProductImage.jsx';
 import { useAsync } from '../hooks/useAsync.js';
 import { catalogApi } from '../services/api.js';
-import { productImage } from '../utils/product.js';
+import tierraMateHome from '../assets/tierra-mate-home-transparent.png';
 
 export function HomePage() {
   const navigate = useNavigate();
   const categories = useAsync(async () => (await catalogApi.getCategories({ active: true, limit: 100 })).data, []);
   const featured = useAsync(async () => (await catalogApi.getProducts({ active: true, featured: true, limit: 8 })).data, []);
-  const heroProduct = featured.data?.find((product) => productImage(product));
 
   return (
     <>
@@ -26,8 +24,7 @@ export function HomePage() {
           </div>
           <div className="hero__visual">
             <div className="hero__halo" />
-            <ProductImage src={heroProduct && productImage(heroProduct)} alt={heroProduct?.name || 'Selección Tierra Mate'} className="hero__image" />
-            <div className="hero__seal"><strong>Selección</strong><span>artesanal</span></div>
+            <img src={tierraMateHome} alt="Logotipo ilustrado de Tierra Mate" className="hero__image hero__image--brand" fetchPriority="high" />
           </div>
         </div>
       </section>

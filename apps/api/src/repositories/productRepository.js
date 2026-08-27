@@ -42,18 +42,29 @@ export async function list({ cursor, limit, category_id, active, featured }) {
   values.push(limit + 1);
 
   const result = await query(
-    `select
+    `with reserved_by_variant as (
+       select oi.variant_id, sum(oi.quantity)::integer as reserved_quantity
+       from public.order_items oi
+       join public.orders o on o.id = oi.order_id
+       where o.status = 'reserved'
+         and o.reserved_until > now()
+       group by oi.variant_id
+     )
+     select
        p.id, p.category_id, p.name, p.slug, p.description, p.materials,
        p.featured, p.active, p.created_at, p.updated_at,
        c.name as category_name,
        min(v.price) filter (where v.active = true) as min_price,
        coalesce(sum(v.stock_quantity) filter (where v.active = true), 0)::integer as physical_stock,
+       coalesce(sum(greatest(v.stock_quantity - coalesce(r.reserved_quantity, 0), 0))
+         filter (where v.active = true), 0)::integer as available_stock,
        (select i.storage_path from public.product_images i
         where i.product_id = p.id
         order by i.is_primary desc, i.display_order asc, i.id asc limit 1) as primary_image
      from public.products p
      join public.categories c on c.id = p.category_id
      left join public.product_variants v on v.product_id = p.id
+     left join reserved_by_variant r on r.variant_id = v.id
      where ${conditions.join(' and ')}
      group by p.id, c.id
      order by p.id asc
@@ -78,7 +89,22 @@ export async function findById(id) {
   if (!product) return null;
 
   const [variants, images, personalizations] = await Promise.all([
-    query('select * from public.product_variants where product_id = $1 order by id', [id]),
+    query(
+      `select v.*,
+         greatest(v.stock_quantity - coalesce(r.reserved_quantity, 0), 0)::integer as available_stock
+       from public.product_variants v
+       left join lateral (
+         select sum(oi.quantity)::integer as reserved_quantity
+         from public.order_items oi
+         join public.orders o on o.id = oi.order_id
+         where oi.variant_id = v.id
+           and o.status = 'reserved'
+           and o.reserved_until > now()
+       ) r on true
+       where v.product_id = $1
+       order by v.id`,
+      [id],
+    ),
     query('select * from public.product_images where product_id = $1 order by is_primary desc, display_order, id', [id]),
     query('select * from public.personalization_options where product_id = $1 order by display_order, id', [id]),
   ]);

@@ -10,6 +10,7 @@ export function AdminLayout() {
         <nav aria-label="Panel administrativo">
           <NavLink end to="/admin">Resumen</NavLink>
           <NavLink to="/admin/productos">Productos</NavLink>
+          <NavLink to="/admin/pedidos">Pedidos</NavLink>
           <NavLink to="/admin/categorias">Categorías</NavLink>
           <a href="/" target="_blank" rel="noreferrer">Ver tienda ↗</a>
         </nav>

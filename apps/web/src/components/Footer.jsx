@@ -13,11 +13,15 @@ export function Footer() {
             Creado por{' '}
             <a href="https://www.instagram.com/octavio_dugo/" target="_blank" rel="noreferrer">@octavio_dugo</a>
             {' y '}
-            <a href="https://www.instagram.com/maximoferrara_/" target="_blank" rel="noreferrer">@maximoferrara_</a>
+            <a href="https://www.instagram.com/maximoferrara___/" target="_blank" rel="noreferrer">@maximoferrara___</a>
+          </p>
+            <p className="site-footer__creators">
+            Nuestro Instagram{' '}
+            <a href="https://www.instagram.com/tierra.mate.lujan/" target="_blank" rel="noreferrer">@tierra.mate.lujan</a>
           </p>
         </div>
       </div>
-      <div className="container site-footer__bottom"><span>Hecho con calma en Argentina.</span><span>© {new Date().getFullYear()} Tierra Mate Shop</span></div>
+      <div className="container site-footer__bottom"><span>Hecho con amor en Argentina.</span><span>© {new Date().getFullYear()} Tierra Mate Shop</span></div>
     </footer>
   );
 }

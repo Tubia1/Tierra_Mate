@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
+import { useCart } from '../cart/CartContext.jsx';
 
 export function Header() {
+  const { itemCount } = useCart();
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
   return (
@@ -24,6 +26,7 @@ export function Header() {
         <nav id="main-navigation" className={`main-nav ${open ? 'main-nav--open' : ''}`} aria-label="Navegación principal">
           <NavLink to="/" onClick={close}>Inicio</NavLink>
           <NavLink to="/productos" onClick={close}>Productos</NavLink>
+          <NavLink className="cart-link" to="/carrito" onClick={close}>Carrito <span aria-label={`${itemCount} productos en el carrito`}>{itemCount}</span></NavLink>
         </nav>
       </div>
     </header>

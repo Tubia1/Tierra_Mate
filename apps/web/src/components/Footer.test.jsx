@@ -10,9 +10,9 @@ describe('Footer', () => {
       'href',
       'https://www.instagram.com/octavio_dugo/',
     );
-    expect(screen.getByRole('link', { name: '@maximoferrara_' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: '@maximoferrara___' })).toHaveAttribute(
       'href',
-      'https://www.instagram.com/maximoferrara_/',
+      'https://www.instagram.com/maximoferrara___/',
     );
   });
 });
