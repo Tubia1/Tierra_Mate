@@ -24,10 +24,10 @@ La API usa la estructura `controller -> service -> repository -> PostgreSQL`.
 
 ## Frontend publico
 
-La primera version visual incluye inicio, catalogo con filtro por categoria y
-paginacion, detalle interactivo de producto y pagina 404. Consume solamente las
-lecturas publicas de la API; no se conecta directamente a PostgreSQL ni utiliza
-claves secretas de Supabase.
+La interfaz publica incluye inicio, catalogo con filtro por categoria y
+paginacion, detalle interactivo, carrito persistente y compra mediante una
+reserva con apertura de WhatsApp. Consume solamente la API; no se conecta
+directamente a PostgreSQL ni utiliza claves secretas de Supabase.
 
 ```bash
 cp apps/web/.env.example apps/web/.env
@@ -55,9 +55,9 @@ npm run build:web
 ```
 
 El frontend incluye un panel administrador en `/admin`: login, rutas protegidas,
-gestion de categorias y productos, variantes, precios, ajustes de stock, imagenes
-y personalizaciones. La gestion visual de pedidos se incorporara en una siguiente
-etapa. El carrito y la creacion de pedidos desde la interfaz publica continuan pendientes.
+gestion de categorias y productos, variantes, precios, ajustes de stock, imagenes,
+personalizaciones y pedidos con detalle, confirmacion, cancelacion y seguimiento
+de estados.
 
 ### Crear el primer administrador
 
@@ -120,6 +120,13 @@ consultas de pedidos requieren `Authorization: Bearer <token>`.
 durante los minutos configurados en `store_settings` y devuelve el mensaje/URL
 de WhatsApp. La reserva no modifica `stock_quantity`; el stock fisico se
 descuenta recien al confirmar la venta.
+
+Una variante puede repetirse en lineas independientes cuando cambian sus
+personalizaciones. El carrito combina solamente configuraciones identicas. Al
+crear la reserva, la API agrupa todas las cantidades por `variant_id`, bloquea
+cada variante una sola vez y compara el total solicitado con el stock fisico
+menos las reservas vigentes. Despues guarda y muestra cada configuracion como
+una linea separada, incluido el mensaje de WhatsApp.
 
 Las cancelaciones y el vencimiento cambian solamente el estado del pedido: no
 modifican el stock fisico ni crean movimientos de inventario. La migracion

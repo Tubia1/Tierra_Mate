@@ -63,4 +63,29 @@ describe('CartPage', () => {
     expect(screen.getByText('Mate Imperial')).toBeInTheDocument();
     expect(popup.close).toHaveBeenCalled();
   });
+
+  it('envía lineas separadas cuando se repite variant_id con grabados diferentes', async () => {
+    localStorage.setItem('tierra-mate-cart', JSON.stringify([
+      { ...cartItem, quantity: 1, personalizations: [{ ...cartItem.personalizations[0], customerNote: 'Tobias' }] },
+      { ...cartItem, quantity: 1, personalizations: [{ ...cartItem.personalizations[0], customerNote: 'Matías' }] },
+    ]));
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(() => jsonResponse({
+      order: { code: 'TMS-000124', reserved_until: '2026-08-26T22:30:00.000Z' },
+      whatsapp_url: 'https://wa.me/5491100000000?text=Pedido',
+    }));
+    vi.spyOn(window, 'open').mockReturnValue({ opener: window, location: { href: '' }, close: vi.fn() });
+    const user = userEvent.setup();
+    render(<CartProvider><MemoryRouter><CartPage /></MemoryRouter></CartProvider>);
+
+    expect(screen.getAllByText('Mate Imperial')).toHaveLength(2);
+    await user.type(screen.getByLabelText('Nombre y apellido'), 'Ana Pérez');
+    await user.type(screen.getByLabelText('Teléfono'), '1155551234');
+    await user.type(screen.getByLabelText('Localidad'), 'Morón');
+    await user.type(screen.getByLabelText('Dirección'), 'Belgrano 123');
+    await user.click(screen.getByRole('button', { name: 'Reservar y abrir WhatsApp' }));
+
+    const request = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(request.items.map((item) => item.variant_id)).toEqual(['10', '10']);
+    expect(request.items.map((item) => item.personalizations[0].customer_note)).toEqual(['Tobias', 'Matías']);
+  });
 });

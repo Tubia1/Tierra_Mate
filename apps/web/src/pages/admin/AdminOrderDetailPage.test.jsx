@@ -47,6 +47,22 @@ describe('AdminOrderDetailPage', () => {
     expect(options.headers.Authorization).toBe('Bearer jwt-pedidos');
   });
 
+  it('muestra lineas separadas de una misma variante con personalizaciones diferentes', async () => {
+    const order = detail();
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(response(detail({
+      items: [
+        { ...order.items[0], id: '70', personalizations: [{ ...order.items[0].personalizations[0], id: '80', customer_note: 'Tobias' }] },
+        { ...order.items[0], id: '71', personalizations: [{ ...order.items[0].personalizations[0], id: '81', customer_note: 'Matías' }] },
+      ],
+    })));
+    renderPage();
+
+    expect(await screen.findAllByRole('heading', { name: 'Mate Imperial' })).toHaveLength(2);
+    expect(screen.getByText('Nota: Tobias')).toBeInTheDocument();
+    expect(screen.getByText('Nota: Matías')).toBeInTheDocument();
+    expect(screen.getByText('2 líneas')).toBeInTheDocument();
+  });
+
   it('exige confirmación antes de descontar el stock físico', async () => {
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(response(detail()))

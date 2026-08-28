@@ -37,6 +37,6 @@ describe('ProductDetailPage', () => {
     expect(await screen.findByRole('heading', { name: reservedProduct.name })).toBeInTheDocument();
     expect(screen.getByText('0 disponibles')).toBeInTheDocument();
     expect(screen.getByLabelText('Cantidad')).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Sin stock' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Sin disponibilidad' })).toBeDisabled();
   });
 });

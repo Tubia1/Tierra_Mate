@@ -20,7 +20,7 @@ function initialOptionState(options) {
 
 export function ProductDetailPage() {
   const { id } = useParams();
-  const { addItem } = useCart();
+  const { addItem, quantityForVariant } = useCart();
   const request = useAsync(async () => (await catalogApi.getProduct(id)).data, [id]);
   const [selectedVariantId, setSelectedVariantId] = useState(null);
   const [selectedOptions, setSelectedOptions] = useState({});
@@ -41,6 +41,7 @@ export function ProductDetailPage() {
 
   const selectedVariant = variants.find((variant) => String(variant.id) === String(selectedVariantId));
   const selectedAvailableStock = variantAvailableStock(selectedVariant);
+  const selectedRemainingStock = Math.max(0, selectedAvailableStock - quantityForVariant(selectedVariantId));
   const selectedPersonalizations = useMemo(() => personalizations.flatMap((option) => {
     const state = selectedOptions[option.id] || {};
     const type = option.input_type || 'boolean';
@@ -87,7 +88,7 @@ export function ProductDetailPage() {
       setFeedback(`Completá la opción obligatoria: ${missingRequired.name}.`);
       return;
     }
-    addItem({
+    const result = addItem({
       productId: product.id,
       productName: product.name,
       variantId: selectedVariant.id,
@@ -98,6 +99,12 @@ export function ProductDetailPage() {
       imageUrl: product.images?.[0]?.public_url || null,
       personalizations: selectedPersonalizations,
     });
+    if (result.addedQuantity < quantity) {
+      setFeedback(result.addedQuantity > 0
+        ? `Se agregaron ${result.addedQuantity} unidades. Alcanzaste el stock disponible de esta variante.`
+        : 'No queda disponibilidad para agregar más unidades de esta variante.');
+      return;
+    }
     setFeedback(`${product.name} se agregó al carrito.`);
   }
 
@@ -139,8 +146,8 @@ export function ProductDetailPage() {
           </div></fieldset>}
 
           <div className="add-to-cart">
-            <label>Cantidad<select value={quantity} disabled={selectedAvailableStock < 1} onChange={(event) => setQuantity(Number(event.target.value))}>{Array.from({ length: selectedAvailableStock }, (_, index) => <option value={index + 1} key={index + 1}>{index + 1}</option>)}</select></label>
-            <button className="button button--primary" type="button" disabled={!selectedVariant || selectedAvailableStock < 1} onClick={addToCart}>{selectedAvailableStock > 0 ? 'Agregar al carrito' : 'Sin stock'}</button>
+            <label>Cantidad<select value={Math.min(quantity, Math.max(1, selectedRemainingStock))} disabled={selectedRemainingStock < 1} onChange={(event) => setQuantity(Number(event.target.value))}>{Array.from({ length: selectedRemainingStock }, (_, index) => <option value={index + 1} key={index + 1}>{index + 1}</option>)}</select></label>
+            <button className="button button--primary" type="button" disabled={!selectedVariant || selectedRemainingStock < 1} onClick={addToCart}>{selectedRemainingStock > 0 ? 'Agregar al carrito' : 'Sin disponibilidad'}</button>
           </div>
           {feedback && <p className="cart-feedback" aria-live="polite">{feedback}</p>}
         </div>

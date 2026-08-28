@@ -11,7 +11,7 @@ Construir una tienda web de mates, bombillas, accesorios y sets. El catálogo es
 - `database/migrations/001_initial_schema.sql` contiene el esquema inicial para PostgreSQL alojado en Supabase.
 - Están implementados autenticación administrativa y CRUD de categorías, productos, variantes, imágenes, personalizaciones y ajustes manuales de stock.
 - Estan implementados la carga real a Supabase Storage, la cancelacion administrativa, el vencimiento automatico cada minuto mediante Supabase Cron (con vencimiento manual como respaldo), la confirmacion administrativa de ventas y el seguimiento administrativo `confirmed -> preparing -> completed`.
-- `apps/web` contiene la primera version visual publica en React: inicio, catalogo, filtros y detalle interactivo. Tambien contiene `/admin`: login, rutas protegidas y gestion de categorias, productos, variantes, precios, stock, imagenes y personalizaciones. Siguen pendientes el carrito, la compra por WhatsApp y el modulo administrativo de pedidos.
+- `apps/web` contiene la interfaz publica en React: inicio, catalogo, filtros, detalle interactivo, carrito persistente y compra por WhatsApp. Tambien contiene `/admin`: login, rutas protegidas y gestion de categorias, productos, variantes, precios, stock, imagenes, personalizaciones y pedidos.
 - No presentar algo como terminado solamente porque su tabla exista.
 - Estan implementadas las consultas administrativas paginadas y de detalle de pedidos.
 
@@ -26,7 +26,7 @@ implementado `PATCH /api/orders/:id/status` para avanzar pedidos confirmados a
 La carga de imagenes a Supabase Storage y el frontend publico React ya estan
 implementados. El panel administrador ya permite iniciar sesion y gestionar
 categorias, productos, variantes, precios, stock, imagenes y personalizaciones.
-Siguen pendientes el carrito y el modulo administrativo de pedidos.
+El carrito, la compra por WhatsApp y el modulo administrativo de pedidos estan implementados.
 
 Estan implementados `GET /api/orders` y `GET /api/orders/:id` como consultas
 administrativas protegidas con JWT Bearer.
@@ -46,10 +46,12 @@ administrativas protegidas con JWT Bearer.
 - Todos los administradores tienen el mismo nivel de acceso. No crear una tabla de roles ni permisos sin una nueva decisión del usuario. Cada persona conserva su propia cuenta para auditoría.
 - Cada variante tiene precio y stock separados. No guardar el stock únicamente en el producto principal.
 - Un producto puede ofrecer opciones de personalización, valores seleccionables, precio adicional y una nota del cliente.
+- Una variante puede repetirse en lineas separadas cuando sus personalizaciones difieren; configuraciones identicas se combinan en el carrito.
 - Antes de enviar el carrito, pedir nombre, teléfono, localidad y dirección.
 - Crear una reserva durante 30 minutos justo antes de abrir WhatsApp.
 - Una reserva reduce el stock disponible, pero no el stock físico. Al confirmar el pedido se descuenta el stock físico y se registra el movimiento. Al vencer o cancelar una reserva se libera disponibilidad sin sumar stock físico.
 - Resolver reservas y confirmaciones con transacciones y bloqueos de filas para impedir sobreventa.
+- Validar disponibilidad agrupando todas las cantidades por variante, descontando las reservas vigentes y bloqueando cada variante una sola vez en orden de ID.
 - La moneda inicial es ARS.
 
 ## Seguridad y configuración

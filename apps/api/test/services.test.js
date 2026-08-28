@@ -189,7 +189,7 @@ function createOrderRequest(overrides = {}) {
 }
 
 function createOrderRepository(overrides = {}) {
-  const calls = { createdItems: [], createdPersonalizations: [] };
+  const calls = { createdItems: [], createdPersonalizations: [], lockedVariantIds: [] };
   return {
     calls,
     transaction: async (callback) => callback({}),
@@ -199,15 +199,18 @@ function createOrderRepository(overrides = {}) {
       reservation_minutes: 30,
       currency: 'ARS',
     }),
-    lockVariants: async () => [{
-      variant_id: 10,
-      product_id: 1,
-      sku: 'MATE-IMP',
-      variant_name: 'Imperial',
-      price: '1000.00',
-      stock_quantity: 5,
-      product_name: 'Mate Premium',
-    }],
+    lockVariants: async (_client, variantIds) => {
+      calls.lockedVariantIds.push([...variantIds]);
+      return [{
+        variant_id: 10,
+        product_id: 1,
+        sku: 'MATE-IMP',
+        variant_name: 'Imperial',
+        price: '1000.00',
+        stock_quantity: 5,
+        product_name: 'Mate Premium',
+      }];
+    },
     getReservedQuantities: async () => [],
     getPersonalizationOptions: async () => [{
       id: 100,
@@ -281,18 +284,83 @@ test('orderService rechaza stock insuficiente considerando reservas vigentes', a
   );
 });
 
-test('orderService rechaza variantes repetidas', async () => {
-  const service = createOrderService(createOrderRepository());
+test('orderService guarda lineas repetidas por variante con sus personalizaciones y WhatsApp separados', async () => {
+  const repository = createOrderRepository();
+  const result = await createOrderService(repository).create(createOrderRequest({
+    items: [
+      { variant_id: 10, quantity: 1, personalizations: [{ option_id: 100, selected_value: 'iniciales', customer_note: 'Tobias' }] },
+      { variant_id: 10, quantity: 1, personalizations: [{ option_id: 100, selected_value: 'iniciales', customer_note: 'Matías' }] },
+    ],
+  }));
+
+  assert.deepEqual(repository.calls.lockedVariantIds, [[10]]);
+  assert.equal(repository.calls.createdItems.length, 2);
+  assert.equal(repository.calls.createdPersonalizations.length, 2);
+  assert.equal(repository.calls.createdPersonalizations[0].customer_note, 'Tobias');
+  assert.equal(repository.calls.createdPersonalizations[1].customer_note, 'Matías');
+  assert.equal(result.order.subtotal, '2300.00');
+  assert.match(result.message, /\* Grabado: iniciales - Nota: Tobias/);
+  assert.match(result.message, /\* Grabado: iniciales - Nota: Matías/);
+  assert.equal((result.message.match(/- 1 x Mate Premium \/ Imperial/g) ?? []).length, 2);
+});
+
+test('orderService valida stock con la suma agrupada y las reservas vigentes', async () => {
+  const repository = createOrderRepository({
+    lockVariants: async (_client, variantIds) => {
+      repository.calls.lockedVariantIds.push([...variantIds]);
+      return [{ variant_id: 10, product_id: 1, sku: 'MATE-IMP', variant_name: 'Imperial', price: '1000.00', stock_quantity: 2, product_name: 'Mate Premium' }];
+    },
+    getReservedQuantities: async () => [{ variant_id: 10, reserved_quantity: 1 }],
+  });
 
   await assert.rejects(
-    service.create(createOrderRequest({
+    createOrderService(repository).create(createOrderRequest({
       items: [
         { variant_id: 10, quantity: 1, personalizations: [{ option_id: 100, selected_value: 'iniciales' }] },
         { variant_id: 10, quantity: 1, personalizations: [{ option_id: 100, selected_value: 'iniciales' }] },
       ],
     })),
-    (error) => error.code === 'DUPLICATE_VARIANT',
+    (error) => error.code === 'INSUFFICIENT_STOCK'
+      && error.details.available === 1
+      && error.details.requested === 2,
   );
+  assert.deepEqual(repository.calls.lockedVariantIds, [[10]]);
+  assert.equal(repository.calls.createdItems.length, 0);
+});
+
+test('orderService bloquea identificadores unicos una sola vez y en orden', async () => {
+  const repository = createOrderRepository({
+    lockVariants: async (_client, variantIds) => {
+      repository.calls.lockedVariantIds.push([...variantIds]);
+      return [
+        { variant_id: 10, product_id: 1, sku: 'MATE-IMP', variant_name: 'Imperial', price: '1000.00', stock_quantity: 5, product_name: 'Mate Premium' },
+        { variant_id: 20, product_id: 1, sku: 'MATE-NEG', variant_name: 'Negro', price: '1200.00', stock_quantity: 5, product_name: 'Mate Premium' },
+      ];
+    },
+  });
+  await createOrderService(repository).create(createOrderRequest({
+    items: [
+      { variant_id: 20, quantity: 1, personalizations: [{ option_id: 100, selected_value: 'iniciales' }] },
+      { variant_id: 10, quantity: 1, personalizations: [{ option_id: 100, selected_value: 'iniciales' }] },
+      { variant_id: 20, quantity: 1, personalizations: [{ option_id: 100, selected_value: 'iniciales' }] },
+    ],
+  }));
+  assert.deepEqual(repository.calls.lockedVariantIds, [[10, 20]]);
+});
+
+test('orderService valida personalizaciones obligatorias en cada linea antes de persistir', async () => {
+  const repository = createOrderRepository();
+  await assert.rejects(
+    createOrderService(repository).create(createOrderRequest({
+      items: [
+        { variant_id: 10, quantity: 1, personalizations: [{ option_id: 100, selected_value: 'iniciales' }] },
+        { variant_id: 10, quantity: 1, personalizations: [] },
+      ],
+    })),
+    (error) => error.code === 'REQUIRED_PERSONALIZATION_MISSING',
+  );
+  assert.equal(repository.calls.createdItems.length, 0);
+  assert.equal(repository.calls.createdPersonalizations.length, 0);
 });
 
 test('orderService devuelve paginacion y next_cursor del repositorio', async () => {

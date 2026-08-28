@@ -29,16 +29,6 @@ function normalizeChoices(choices) {
   return typeof choices === 'string' ? JSON.parse(choices) : choices;
 }
 
-function assertNoDuplicateVariants(items) {
-  const seen = new Set();
-  for (const item of items) {
-    if (seen.has(item.variant_id)) {
-      throw new AppError('No se permiten variantes repetidas en el pedido', 400, 'DUPLICATE_VARIANT');
-    }
-    seen.add(item.variant_id);
-  }
-}
-
 function groupQuantitiesByVariant(items) {
   const quantities = new Map();
   for (const item of items) {
@@ -269,11 +259,10 @@ export function createOrderService(repository = defaultRepository) {
       return order;
     },
     create: async (data) => {
-      assertNoDuplicateVariants(data.items);
-
       return repository.transaction(async (client) => {
         const settings = await repository.getStoreSettings(client);
-        const variantIds = [...data.items].map((item) => item.variant_id).sort((a, b) => a - b);
+        const requestedVariants = groupQuantitiesByVariant(data.items);
+        const variantIds = requestedVariants.map(({ variantId }) => variantId);
         const variants = await repository.lockVariants(client, variantIds);
         const variantsById = mapById(variants, 'variant_id');
 
@@ -285,6 +274,19 @@ export function createOrderService(repository = defaultRepository) {
         const reservedByVariant = new Map(
           reservedRows.map((row) => [Number(row.variant_id), Number(row.reserved_quantity)]),
         );
+
+        for (const { variantId, quantity } of requestedVariants) {
+          const variant = variantsById.get(variantId);
+          const reservedQuantity = reservedByVariant.get(variantId) ?? 0;
+          const available = Number(variant.stock_quantity) - reservedQuantity;
+          if (available < quantity) {
+            throw new AppError('Stock insuficiente para una variante del pedido', 409, 'INSUFFICIENT_STOCK', {
+              variant_id: variantId,
+              available,
+              requested: quantity,
+            });
+          }
+        }
 
         const productIds = [...new Set(variants.map((variant) => Number(variant.product_id)))].sort((a, b) => a - b);
         const options = await repository.getPersonalizationOptions(client, productIds);
@@ -302,16 +304,6 @@ export function createOrderService(repository = defaultRepository) {
         for (const item of data.items) {
           assertNoDuplicatePersonalizations(item.personalizations);
           const variant = variantsById.get(item.variant_id);
-          const reservedQuantity = reservedByVariant.get(item.variant_id) ?? 0;
-          const available = Number(variant.stock_quantity) - reservedQuantity;
-          if (available < item.quantity) {
-            throw new AppError('Stock insuficiente para una variante del pedido', 409, 'INSUFFICIENT_STOCK', {
-              variant_id: item.variant_id,
-              available,
-              requested: item.quantity,
-            });
-          }
-
           const selectedOptionIds = new Set(item.personalizations.map((entry) => entry.option_id));
           for (const requiredOption of requiredOptionsByProduct.get(Number(variant.product_id)) ?? []) {
             if (!selectedOptionIds.has(Number(requiredOption.id))) {
