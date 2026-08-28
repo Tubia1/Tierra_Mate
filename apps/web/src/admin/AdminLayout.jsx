@@ -1,12 +1,13 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from './AuthContext.jsx';
+import tierraMateMark from '../assets/tierra-mate-mark.png';
 
 export function AdminLayout() {
   const { session, logout } = useAuth();
   return (
     <div className="admin-shell">
       <aside className="admin-sidebar">
-        <NavLink className="brand admin-brand" to="/admin"><span className="brand__mark">TM</span><span><strong>Tierra Mate</strong><small>ADMIN</small></span></NavLink>
+        <NavLink className="brand admin-brand" to="/admin"><span className="brand__mark" aria-hidden="true"><img src={tierraMateMark} alt="" /></span><span><strong>Tierra Mate</strong><small>ADMIN</small></span></NavLink>
         <nav aria-label="Panel administrativo">
           <NavLink end to="/admin">Resumen</NavLink>
           <NavLink to="/admin/productos">Productos</NavLink>

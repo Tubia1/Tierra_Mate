@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useCart } from '../cart/CartContext.jsx';
+import tierraMateMark from '../assets/tierra-mate-mark.png';
 
 export function Header() {
   const { itemCount } = useCart();
@@ -10,7 +11,7 @@ export function Header() {
     <header className="site-header">
       <div className="container site-header__inner">
         <Link className="brand" to="/" onClick={close} aria-label="Tierra Mate Shop, inicio">
-          <span className="brand__mark" aria-hidden="true">TM</span>
+          <span className="brand__mark" aria-hidden="true"><img src={tierraMateMark} alt="" /></span>
           <span><strong>Tierra Mate</strong><small>SHOP</small></span>
         </Link>
         <button
