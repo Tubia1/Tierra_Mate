@@ -14,6 +14,9 @@ Construir una tienda web de mates, bombillas, accesorios y sets. El catálogo es
 - `apps/web` contiene la interfaz publica en React: inicio, catalogo, filtros, detalle interactivo, carrito persistente y compra por WhatsApp. Tambien contiene `/admin`: login, rutas protegidas y gestion de categorias, productos, variantes, precios, stock, imagenes, personalizaciones y pedidos.
 - No presentar algo como terminado solamente porque su tabla exista.
 - Estan implementadas las consultas administrativas paginadas y de detalle de pedidos.
+- Están implementadas la configuración pública y administrativa de la tienda, y la gestión de usuarios administrativos desde `/admin/configuracion` y `/admin/usuarios`.
+- Cada petición administrativa comprueba que la cuenta del JWT exista, continúe activa y conserve el mismo email. Todos los administradores mantienen el mismo acceso.
+- Está implementado el módulo administrativo de inventario de solo consulta en `/admin/inventario`, con historial paginado y alertas de stock bajo.
 
 ## Arquitectura y estructura
 
@@ -88,6 +91,15 @@ administrativas protegidas con JWT Bearer.
 - Avanzar estado de pedido (administrativo): `PATCH /api/orders/:id/status`
 - Vencer reservas terminadas (administrativo): `POST /api/orders/expire`
 - Automatizar vencimientos: `database/migrations/002_schedule_order_expiration.sql`
+- Configuración pública: `GET /api/store-settings`
+- Actualizar configuración (administrativo): `PATCH /api/store-settings`
+- Usuarios administrativos: `GET/POST /api/admin-users`, `PATCH /api/admin-users/:id/status` y `PATCH /api/admin-users/:id/password`
+- Historial de inventario (administrativo): `GET /api/inventory/movements`
+- Alertas de stock bajo (administrativo): `GET /api/inventory/low-stock`
+
+La configuración pública se carga una sola vez en React y se usa para el nombre, la moneda y el enlace válido de WhatsApp; si falla, el catálogo conserva los valores predeterminados. La duración configurada afecta únicamente reservas nuevas. No existe registro público ni roles: las cuentas se crean activas, se desactivan sin borrado físico y no se permite desactivar la cuenta propia ni el último administrador activo. La prueba desde túneles o celulares continúa siendo una verificación manual separada.
+
+El historial de inventario admite filtros por tipo, producto, variante, administrador y pedido, con paginación por cursor. Las alertas distinguen stock físico, unidades reservadas vigentes y disponibilidad. Este módulo no modifica stock, pedidos ni movimientos. El dashboard con estadísticas generales continúa pendiente.
 
 ## Criterio de finalización
 

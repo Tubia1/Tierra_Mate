@@ -15,8 +15,11 @@ import { AdminProductsPage } from './pages/admin/AdminProductsPage.jsx';
 import { AdminProductDetailPage } from './pages/admin/AdminProductDetailPage.jsx';
 import { AdminOrdersPage } from './pages/admin/AdminOrdersPage.jsx';
 import { AdminOrderDetailPage } from './pages/admin/AdminOrderDetailPage.jsx';
+import { AdminSettingsPage } from './pages/admin/AdminSettingsPage.jsx';
+import { AdminUsersPage } from './pages/admin/AdminUsersPage.jsx';
+import { AdminInventoryPage } from './pages/admin/AdminInventoryPage.jsx';
 
-export const routes = [{ path: '/admin/login', element: <AdminLoginPage /> }, { element: <ProtectedRoute />, children: [{ path: '/admin', element: <AdminLayout />, children: [{ index: true, element: <AdminDashboardPage /> }, { path: 'productos', element: <AdminProductsPage /> }, { path: 'productos/:id', element: <AdminProductDetailPage /> }, { path: 'categorias', element: <AdminCategoriesPage /> }, { path: 'pedidos', element: <AdminOrdersPage /> }, { path: 'pedidos/:id', element: <AdminOrderDetailPage /> }] }] }, { element: <Layout />, children: [{ path: '/', element: <HomePage /> }, { path: '/productos', element: <CatalogPage /> }, { path: '/productos/:id', element: <ProductDetailPage /> }, { path: '/carrito', element: <CartPage /> }, { path: '*', element: <NotFoundPage /> }] }];
+export const routes = [{ path: '/admin/login', element: <AdminLoginPage /> }, { element: <ProtectedRoute />, children: [{ path: '/admin', element: <AdminLayout />, children: [{ index: true, element: <AdminDashboardPage /> }, { path: 'productos', element: <AdminProductsPage /> }, { path: 'productos/:id', element: <AdminProductDetailPage /> }, { path: 'categorias', element: <AdminCategoriesPage /> }, { path: 'pedidos', element: <AdminOrdersPage /> }, { path: 'pedidos/:id', element: <AdminOrderDetailPage /> }, { path: 'configuracion', element: <AdminSettingsPage /> }, { path: 'usuarios', element: <AdminUsersPage /> }, { path: 'inventario', element: <AdminInventoryPage /> }] }] }, { element: <Layout />, children: [{ path: '/', element: <HomePage /> }, { path: '/productos', element: <CatalogPage /> }, { path: '/productos/:id', element: <ProductDetailPage /> }, { path: '/carrito', element: <CartPage /> }, { path: '*', element: <NotFoundPage /> }] }];
 export const router = createBrowserRouter(routes);
 
 export function App() { return <AuthProvider><RouterProvider router={router} /></AuthProvider>; }

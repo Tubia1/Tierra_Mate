@@ -205,20 +205,6 @@ export async function updateOrderStatus(client, id, { fromStatus, toStatus }) {
   return result.rows[0] ?? null;
 }
 
-export async function getStoreSettings(client) {
-  const result = await client.query(
-    `select store_name, whatsapp_number, reservation_minutes, currency
-     from public.store_settings
-     where id = 1`,
-  );
-  return result.rows[0] ?? {
-    store_name: 'Tierra Mate Shop',
-    whatsapp_number: null,
-    reservation_minutes: 30,
-    currency: 'ARS',
-  };
-}
-
 export async function lockVariants(client, variantIds) {
   const result = await client.query(
     `select

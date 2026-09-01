@@ -65,6 +65,8 @@ export const orderApi = {
   create: (data) => apiRequest('/orders', jsonOptions('POST', data)),
 };
 
+export const storeSettingsApi = { get: () => apiRequest('/store-settings') };
+
 export const adminApi = {
   login: (credentials) => apiRequest('/auth/login', jsonOptions('POST', credentials)),
   getOrders: (params = {}, token) => apiRequest(`/orders${toQuery(params)}`, jsonOptions('GET', undefined, token)),
@@ -73,6 +75,14 @@ export const adminApi = {
   cancelOrder: (id, data, token) => apiRequest(`/orders/${encodeURIComponent(id)}/cancel`, jsonOptions('PATCH', data, token)),
   updateOrderStatus: (id, status, token) => apiRequest(`/orders/${encodeURIComponent(id)}/status`, jsonOptions('PATCH', { status }, token)),
   expireOrders: (token) => apiRequest('/orders/expire', jsonOptions('POST', undefined, token)),
+  getStoreSettings: () => apiRequest('/store-settings'),
+  updateStoreSettings: (data, token) => apiRequest('/store-settings', jsonOptions('PATCH', data, token)),
+  getAdminUsers: (token) => apiRequest('/admin-users', jsonOptions('GET', undefined, token)),
+  createAdminUser: (data, token) => apiRequest('/admin-users', jsonOptions('POST', data, token)),
+  updateAdminUserStatus: (id, active, token) => apiRequest(`/admin-users/${encodeURIComponent(id)}/status`, jsonOptions('PATCH', { active }, token)),
+  resetAdminUserPassword: (id, password, token) => apiRequest(`/admin-users/${encodeURIComponent(id)}/password`, jsonOptions('PATCH', { password }, token)),
+  getInventoryMovements: (params = {}, token) => apiRequest(`/inventory/movements${toQuery(params)}`, jsonOptions('GET', undefined, token)),
+  getLowStock: (token) => apiRequest('/inventory/low-stock', jsonOptions('GET', undefined, token)),
   getCategories: (params = {}) => apiRequest(`/categories${toQuery(params)}`),
   createCategory: (data, token) => apiRequest('/categories', jsonOptions('POST', data, token)),
   updateCategory: (id, data, token) => apiRequest(`/categories/${id}`, jsonOptions('PATCH', data, token)),

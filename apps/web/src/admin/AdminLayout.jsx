@@ -12,7 +12,10 @@ export function AdminLayout() {
           <NavLink end to="/admin">Resumen</NavLink>
           <NavLink to="/admin/productos">Productos</NavLink>
           <NavLink to="/admin/pedidos">Pedidos</NavLink>
+          <NavLink to="/admin/inventario">Inventario</NavLink>
           <NavLink to="/admin/categorias">Categorías</NavLink>
+          <NavLink to="/admin/configuracion">Configuración</NavLink>
+          <NavLink to="/admin/usuarios">Usuarios</NavLink>
           <a href="/" target="_blank" rel="noreferrer">Ver tienda ↗</a>
         </nav>
         <div className="admin-user"><small>Sesión iniciada</small><strong>{session.admin.name}</strong><button type="button" onClick={logout}>Cerrar sesión</button></div>

@@ -1,5 +1,6 @@
 import { AppError } from '../helpers/AppError.js';
 import * as defaultRepository from '../repositories/orderRepository.js';
+import * as defaultSettingsRepository from '../repositories/storeSettingsRepository.js';
 
 const MONEY_SCALE = 100;
 
@@ -114,7 +115,7 @@ function canTransitionOrder(currentStatus, nextStatus) {
     || (currentStatus === 'preparing' && nextStatus === 'completed');
 }
 
-export function createOrderService(repository = defaultRepository) {
+export function createOrderService(repository = defaultRepository, settingsRepository = defaultSettingsRepository) {
   return {
     list: (filters) => repository.list(filters),
     expire: async () => {
@@ -260,7 +261,9 @@ export function createOrderService(repository = defaultRepository) {
     },
     create: async (data) => {
       return repository.transaction(async (client) => {
-        const settings = await repository.getStoreSettings(client);
+        const settings = repository.getStoreSettings
+          ? await repository.getStoreSettings(client)
+          : await settingsRepository.get(client);
         const requestedVariants = groupQuantitiesByVariant(data.items);
         const variantIds = requestedVariants.map(({ variantId }) => variantId);
         const variants = await repository.lockVariants(client, variantIds);

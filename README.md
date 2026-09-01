@@ -168,3 +168,16 @@ Ejemplo minimo:
   ]
 }
 ```
+# Configuración y usuarios administrativos
+
+La configuración pública se consulta con `GET /api/store-settings` y alimenta una única carga centralizada del frontend para nombre, moneda, duración de reserva y WhatsApp. `PATCH /api/store-settings` requiere JWT administrativo; los cambios de duración se aplican solamente a reservas nuevas.
+
+La gestión del equipo está disponible en `/admin/usuarios` mediante `GET /api/admin-users`, `POST /api/admin-users`, `PATCH /api/admin-users/:id/status` y `PATCH /api/admin-users/:id/password`. No existe registro público, las contraseñas se guardan con bcrypt, no se eliminan cuentas y no se permite desactivar la cuenta propia ni el último administrador activo. Todos los administradores conservan el mismo acceso. Cada petición protegida vuelve a comprobar que la cuenta exista, siga activa y coincida con el email del JWT.
+
+Las pantallas protegidas `/admin/configuracion` y `/admin/usuarios` permiten operar estas funciones. La comprobación desde un celular o mediante un túnel continúa siendo una verificación manual separada de las pruebas automatizadas.
+
+## Inventario administrativo
+
+La ruta protegida `/admin/inventario` consulta alertas de stock bajo e historial físico mediante `GET /api/inventory/low-stock` y `GET /api/inventory/movements`. El historial se pagina por cursor descendente y permite filtrar por tipo de movimiento, producto, variante, administrador y pedido.
+
+Las alertas muestran por separado stock físico, unidades comprometidas por reservas vigentes y stock disponible. Productos o variantes inactivos no generan alertas, aunque sus movimientos históricos siguen visibles. El módulo es exclusivamente de consulta: no cambia stock, pedidos, reservas ni movimientos. El dashboard con estadísticas generales continúa pendiente.
