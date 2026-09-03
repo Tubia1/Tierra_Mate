@@ -69,6 +69,7 @@ export const storeSettingsApi = { get: () => apiRequest('/store-settings') };
 
 export const adminApi = {
   login: (credentials) => apiRequest('/auth/login', jsonOptions('POST', credentials)),
+  getDashboard: (token) => apiRequest('/dashboard', jsonOptions('GET', undefined, token)),
   getOrders: (params = {}, token) => apiRequest(`/orders${toQuery(params)}`, jsonOptions('GET', undefined, token)),
   getOrder: (id, token) => apiRequest(`/orders/${encodeURIComponent(id)}`, jsonOptions('GET', undefined, token)),
   confirmOrder: (id, token) => apiRequest(`/orders/${encodeURIComponent(id)}/confirm`, jsonOptions('PATCH', undefined, token)),

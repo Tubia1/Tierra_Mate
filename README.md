@@ -99,6 +99,7 @@ se guarda en texto plano en PostgreSQL ni se imprime durante el proceso.
 - `PATCH /api/orders/:id/confirm` (administrativa, confirma la venta reservada)
 - `PATCH /api/orders/:id/status` (administrativa, avanza `confirmed -> preparing -> completed`)
 - `POST /api/orders/expire` (administrativa, vence reservas cuyo plazo termino)
+- `GET /api/dashboard` (administrativa, resumen de pedidos, ventas e inventario)
 - `GET|POST /api/categories`
 - `GET|PATCH|DELETE /api/categories/:id`
 - `GET|POST /api/products`
@@ -143,6 +144,14 @@ El seguimiento administrativo permite avanzar un pedido confirmado a
 no crean movimientos de inventario y preservan `confirmed_at`; al completar se
 guarda `completed_at`.
 
+### Dashboard administrativo
+
+El resumen de `/admin` consume `GET /api/dashboard`, un endpoint protegido y exclusivamente de consulta. Muestra reservas activas, estados actuales, ventas confirmadas de hoy y del mes, inventario, los ocho pedidos recientes y hasta cinco productos más vendidos.
+
+Una venta confirmada es un pedido cuyo estado actual es `confirmed`, `preparing` o `completed`; se atribuye al día y mes de `confirmed_at`, nunca de `created_at`. Los completados del día se atribuyen mediante `completed_at`. Todos los límites usan `America/Argentina/Buenos_Aires` aunque el servidor funcione en UTC. Los valores representan pedidos confirmados y no necesariamente pagos cobrados.
+
+En inventario se consideran solamente variantes activas de productos activos no eliminados. Stock bajo incluye el límite exacto y puede incluir también una variante sin stock.
+
 Ejemplo minimo:
 
 ```json
@@ -180,4 +189,4 @@ Las pantallas protegidas `/admin/configuracion` y `/admin/usuarios` permiten ope
 
 La ruta protegida `/admin/inventario` consulta alertas de stock bajo e historial físico mediante `GET /api/inventory/low-stock` y `GET /api/inventory/movements`. El historial se pagina por cursor descendente y permite filtrar por tipo de movimiento, producto, variante, administrador y pedido.
 
-Las alertas muestran por separado stock físico, unidades comprometidas por reservas vigentes y stock disponible. Productos o variantes inactivos no generan alertas, aunque sus movimientos históricos siguen visibles. El módulo es exclusivamente de consulta: no cambia stock, pedidos, reservas ni movimientos. El dashboard con estadísticas generales continúa pendiente.
+Las alertas muestran por separado stock físico, unidades comprometidas por reservas vigentes y stock disponible. Productos o variantes inactivos no generan alertas, aunque sus movimientos históricos siguen visibles. El módulo es exclusivamente de consulta: no cambia stock, pedidos, reservas ni movimientos.

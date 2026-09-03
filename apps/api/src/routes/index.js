@@ -6,6 +6,7 @@ import { productController } from '../controllers/productController.js';
 import { adminUserController } from '../controllers/adminUserController.js';
 import { storeSettingsController } from '../controllers/storeSettingsController.js';
 import { inventoryController } from '../controllers/inventoryController.js';
+import { dashboardController } from '../controllers/dashboardController.js';
 import { asyncHandler } from '../helpers/asyncHandler.js';
 import { query } from '../database/pool.js';
 
@@ -27,3 +28,4 @@ apiRouter.use('/products', productController);
 apiRouter.use('/admin-users', adminUserController);
 apiRouter.use('/store-settings', storeSettingsController);
 apiRouter.use('/inventory', inventoryController);
+apiRouter.use('/dashboard', dashboardController);

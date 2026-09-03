@@ -96,10 +96,13 @@ administrativas protegidas con JWT Bearer.
 - Usuarios administrativos: `GET/POST /api/admin-users`, `PATCH /api/admin-users/:id/status` y `PATCH /api/admin-users/:id/password`
 - Historial de inventario (administrativo): `GET /api/inventory/movements`
 - Alertas de stock bajo (administrativo): `GET /api/inventory/low-stock`
+- Dashboard administrativo (solo consulta): `GET /api/dashboard`
 
 La configuración pública se carga una sola vez en React y se usa para el nombre, la moneda y el enlace válido de WhatsApp; si falla, el catálogo conserva los valores predeterminados. La duración configurada afecta únicamente reservas nuevas. No existe registro público ni roles: las cuentas se crean activas, se desactivan sin borrado físico y no se permite desactivar la cuenta propia ni el último administrador activo. La prueba desde túneles o celulares continúa siendo una verificación manual separada.
 
-El historial de inventario admite filtros por tipo, producto, variante, administrador y pedido, con paginación por cursor. Las alertas distinguen stock físico, unidades reservadas vigentes y disponibilidad. Este módulo no modifica stock, pedidos ni movimientos. El dashboard con estadísticas generales continúa pendiente.
+El historial de inventario admite filtros por tipo, producto, variante, administrador y pedido, con paginación por cursor. Las alertas distinguen stock físico, unidades reservadas vigentes y disponibilidad. Este módulo no modifica stock, pedidos ni movimientos.
+
+El dashboard dinámico de `/admin` muestra pedidos, reservas, ventas confirmadas, inventario, pedidos recientes y productos más vendidos. Una venta se considera confirmada cuando su estado actual es `confirmed`, `preparing` o `completed`, y se fecha mediante `confirmed_at`; los completados diarios usan `completed_at`. Los límites usan `America/Argentina/Buenos_Aires`. Los valores no representan necesariamente pagos cobrados. Stock bajo incluye también variantes sin stock que cumplen el umbral.
 
 ## Criterio de finalización
 
