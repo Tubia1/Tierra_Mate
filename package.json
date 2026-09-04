@@ -2,6 +2,9 @@
   "name": "tierra-mate-shop",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": "24.x"
+  },
   "workspaces": [
     "apps/*"
   ],
@@ -13,8 +16,5 @@
     "start:api": "npm run start --workspace @tierra-mate/api",
     "admin:reset-password": "npm run admin:reset-password --workspace @tierra-mate/api",
     "test": "npm run test --workspace @tierra-mate/api"
-  },
-  "dependencies": {
-    "@supabase/server": "^1.4.1"
   }
 }

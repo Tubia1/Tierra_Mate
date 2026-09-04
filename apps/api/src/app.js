@@ -8,6 +8,9 @@ import { apiRouter } from './routes/index.js';
 
 export function createApp() {
   const app = express();
+  if(app.modeEnv  === 'production') {
+    app.set('trust proxy', 1);
+  }
   app.disable('x-powered-by');
   app.use(helmet());
   app.use(cors({

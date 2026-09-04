@@ -6,7 +6,7 @@ if (!env.databaseUrl) {
   throw new Error('DATABASE_URL es obligatoria para iniciar el servidor');
 }
 
-const server = app.listen(env.port, () => {
+const server = app.listen(env.port,"0.0.0.0", () => {
   console.log(`Tierra Mate API escuchando en http://localhost:${env.port}`);
 });
 
