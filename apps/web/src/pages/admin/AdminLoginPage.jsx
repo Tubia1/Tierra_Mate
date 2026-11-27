@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../admin/AuthContext.jsx';
-import tierraMateMark from '../../assets/tierra-mate-mark.png';
+import tierraMateMark from '../../assets/tierra-mate-mark.webp';
 
 export function AdminLoginPage() {
   const { session, login } = useAuth();

@@ -4,6 +4,9 @@ import { MemoryRouter } from 'react-router-dom';
 import { CartProvider } from '../cart/CartContext.jsx';
 import { jsonResponse } from '../test/fixtures.js';
 import { CartPage } from './CartPage.jsx';
+import { shopNotice } from '../utils/shopNotice.js';
+
+vi.mock('../utils/shopNotice.js', () => ({ shopNotice: vi.fn() }));
 
 const cartItem = {
   productId: '2', productName: 'Mate Imperial', variantId: '10', variantName: 'Negro',
@@ -12,6 +15,7 @@ const cartItem = {
 };
 
 describe('CartPage', () => {
+  beforeEach(() => vi.mocked(shopNotice).mockClear());
   it('crea la reserva con los datos del carrito y abre WhatsApp', async () => {
     localStorage.setItem('tierra-mate-cart', JSON.stringify([cartItem]));
     const result = {
@@ -33,6 +37,7 @@ describe('CartPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'TMS-000123' })).toBeInTheDocument();
     expect(popup.location.href).toBe(result.whatsapp_url);
+    expect(shopNotice).toHaveBeenCalledWith('Reserva creada', expect.stringContaining(result.order.code));
     const request = JSON.parse(fetchMock.mock.calls[0][1].body);
     expect(request).toEqual({
       customer: { name: 'Ana Pérez', phone: '11 5555 1234', locality: 'Morón', address: 'Belgrano 123' },
@@ -62,6 +67,7 @@ describe('CartPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/cambió la disponibilidad/i);
     expect(screen.getByText('Mate Imperial')).toBeInTheDocument();
     expect(popup.close).toHaveBeenCalled();
+    expect(shopNotice).not.toHaveBeenCalled();
   });
 
   it('envía lineas separadas cuando se repite variant_id con grabados diferentes', async () => {

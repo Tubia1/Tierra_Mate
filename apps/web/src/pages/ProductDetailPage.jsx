@@ -9,6 +9,7 @@ import { StockBadge } from '../components/StockBadge.jsx';
 import { useAsync } from '../hooks/useAsync.js';
 import { catalogApi } from '../services/api.js';
 import { variantAvailableStock } from '../utils/product.js';
+import { shopNotice } from '../utils/shopNotice.js';
 
 function initialOptionState(options) {
   return Object.fromEntries(options.map((option) => [option.id, {
@@ -21,7 +22,7 @@ function initialOptionState(options) {
 export function ProductDetailPage() {
   const { id } = useParams();
   const { addItem, quantityForVariant } = useCart();
-  const request = useAsync(async () => (await catalogApi.getProduct(id)).data, [id]);
+  const request = useAsync(async ({ signal }) => (await catalogApi.getProduct(id, { signal })).data, [id]);
   const [selectedVariantId, setSelectedVariantId] = useState(null);
   const [selectedOptions, setSelectedOptions] = useState({});
   const [activeImage, setActiveImage] = useState(0);
@@ -106,6 +107,7 @@ export function ProductDetailPage() {
       return;
     }
     setFeedback(`${product.name} se agregó al carrito.`);
+    void shopNotice('Agregado al carrito', `${product.name} · ${quantity} ${quantity === 1 ? 'unidad' : 'unidades'}`);
   }
 
   if (request.loading) return <section className="detail-page container"><LoadingSkeleton count={2} variant="detail" /></section>;

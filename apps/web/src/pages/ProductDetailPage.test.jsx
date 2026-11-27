@@ -6,6 +6,9 @@ import { formatPrice } from '../utils/formatPrice.js';
 import { jsonResponse, productDetail } from '../test/fixtures.js';
 import { ProductDetailPage } from './ProductDetailPage.jsx';
 import { CartProvider } from '../cart/CartContext.jsx';
+import { shopNotice } from '../utils/shopNotice.js';
+
+vi.mock('../utils/shopNotice.js', () => ({ shopNotice: vi.fn() }));
 
 describe('ProductDetailPage', () => {
   it('muestra el detalle y actualiza el precio con variante y personalización', async () => {
@@ -19,6 +22,7 @@ describe('ProductDetailPage', () => {
     expect(screen.getByTestId('total-price').textContent).toBe(formatPrice(30500));
     await userEvent.click(screen.getByRole('button', { name: 'Agregar al carrito' }));
     expect(screen.getByText(/se agregó al carrito/i)).toBeInTheDocument();
+    expect(shopNotice).toHaveBeenCalledWith('Agregado al carrito', expect.stringContaining(productDetail.name));
   });
 
   it('limita la cantidad al stock disponible después de descontar reservas vigentes', async () => {

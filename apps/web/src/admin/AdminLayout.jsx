@@ -1,6 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from './AuthContext.jsx';
-import tierraMateMark from '../assets/tierra-mate-mark.png';
+import tierraMateMark from '../assets/tierra-mate-mark.webp';
 
 export function AdminLayout() {
   const { session, logout } = useAuth();

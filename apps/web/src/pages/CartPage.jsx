@@ -4,6 +4,7 @@ import { useCart } from '../cart/CartContext.jsx';
 import { Price } from '../components/Price.jsx';
 import { ProductImage } from '../components/ProductImage.jsx';
 import { orderApi } from '../services/api.js';
+import { shopNotice } from '../utils/shopNotice.js';
 
 export function orderPayload(items, form) {
   const fields = new FormData(form);
@@ -58,6 +59,9 @@ export function CartPage() {
       } else {
         whatsappWindow?.close();
       }
+      void shopNotice('Reserva creada', data.whatsapp_url
+        ? `Pedido ${data.order.code}. Continuá por WhatsApp para coordinar tu compra.`
+        : `Pedido ${data.order.code}. La tienda todavía no configuró WhatsApp.`);
     } catch (checkoutError) {
       whatsappWindow?.close();
       setError(checkoutError.code === 'INSUFFICIENT_STOCK'

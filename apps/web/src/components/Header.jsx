@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useCart } from '../cart/CartContext.jsx';
-import tierraMateMark from '../assets/tierra-mate-mark.png';
+import tierraMateMark from '../assets/tierra-mate-mark.webp';
 
 export function Header() {
   const { itemCount } = useCart();

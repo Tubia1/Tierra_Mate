@@ -37,10 +37,12 @@ export async function apiRequest(path, options = {}) {
   let response;
   try {
     response = await fetch(`${API_URL}${path}`, {
+      cache: 'no-store',
       headers: { Accept: 'application/json', ...options.headers },
       ...options,
     });
-  } catch {
+  } catch (error) {
+    if (error.name === 'AbortError') throw error;
     throw new ApiError('No pudimos conectar con la tienda. Revisá tu conexión e intentá nuevamente.', 'NETWORK_ERROR', 0);
   }
 
@@ -56,9 +58,9 @@ export async function apiRequest(path, options = {}) {
 }
 
 export const catalogApi = {
-  getCategories: (params = {}) => apiRequest(`/categories${toQuery(params)}`),
-  getProducts: (params = {}) => apiRequest(`/products${toQuery(params)}`),
-  getProduct: (id) => apiRequest(`/products/${encodeURIComponent(id)}`),
+  getCategories: (params = {}, options = {}) => apiRequest(`/categories${toQuery(params)}`, options),
+  getProducts: (params = {}, options = {}) => apiRequest(`/products${toQuery(params)}`, options),
+  getProduct: (id, options = {}) => apiRequest(`/products/${encodeURIComponent(id)}`, options),
 };
 
 export const orderApi = {
